@@ -805,7 +805,7 @@ PATCH /upload/courses/:courseId/thumbnail
   "createdAt": "2024-01-01T00:00:00Z"
 }
 ```
-**Roles:** `student`, `instructor`, `manager`, `admin`
+**Roles:** `student`, `instructor`, `admin`
 
 ### Category
 ```json
