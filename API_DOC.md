@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://localhost:3000/v1
+https://elearning-backend-uyu0.onrender.com/v1
 ```
 
 ## Authentication
