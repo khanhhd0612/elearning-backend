@@ -5,6 +5,20 @@
 https://elearning-backend-uyu0.onrender.com/v1
 ```
 
+## Global Headers
+| Header | Value | Required | Description |
+|--------|-------|----------|-------------|
+| Content-Type | application/json | Yes | Request body format (for POST/PATCH) |
+| Authorization | Bearer {accessToken} | Conditional | JWT token for authenticated endpoints |
+
+## Content Types
+| Type | Value | Usage |
+|------|-------|-------|
+| JSON | application/json | All standard API requests |
+| FormData | multipart/form-data | File uploads (avatar, thumbnail) |
+
+---
+
 ## Authentication
 - **JWT Bearer Token**: `Authorization: Bearer <accessToken>`
 - **Cookies**: Refresh token stored in `refreshToken` cookie (7 days expiry)
@@ -18,22 +32,65 @@ https://elearning-backend-uyu0.onrender.com/v1
 4. [Course Formats](#course-formats)
 5. [Cohorts](#cohorts)
 6. [Enrollments](#enrollments)
-7. [Financing Options](#financing-options)
-8. [Campuses](#campuses)
-9. [Instructors](#instructors)
-10. [Upload](#upload)
-11. [Models](#models)
-12. [Roles & Permissions](#roles--permissions)
+7. [Enrollment Requests](#enrollment-requests)
+8. [Financing Options](#financing-options)
+9. [Campuses](#campuses)
+10. [Instructors](#instructors)
+11. [Upload](#upload)
+12. [Models](#models)
+13. [Roles & Permissions](#roles--permissions)
+
+---
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Bad Request - Validation error |
+| 401 | Unauthorized - Missing or invalid token |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found - Resource not found |
+| 409 | Conflict - Duplicate resource |
+| 500 | Internal Server Error |
+
+---
+
+## Common Error Response Format
+```json
+{
+  "status": "error",
+  "message": "Mô tả lỗi",
+  "errors": [
+    {
+      "field": "email",
+      "message": "Email không hợp lệ"
+    }
+  ]
+}
+```
 
 ---
 
 ## Auth
 
-### Register
+### Register - Đăng ký tài khoản mới
 ```
 POST /auth/register
 ```
-**Body:**
+**Mô tả:** Tạo tài khoản người dùng mới, gửi email xác minh.
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| email | string | Yes | Email hợp lệ (sẽ được lowercase) |
+| password | string | Yes | Mật khẩu (tối thiểu 8 ký tự, có chữ hoa, chữ thường, số) |
+| firstName | string | Yes | Tên (tối đa 100 ký tự) |
+| lastName | string | Yes | Họ (tối đa 100 ký tự) |
+| phone | string | Yes | Số điện thoại VN (bắt đầu 03, 05, 07, 08, 09) |
+
+**Example:**
 ```json
 {
   "email": "user@example.com",
@@ -52,11 +109,21 @@ POST /auth/register
 }
 ```
 
-### Login
+### Login - Đăng nhập
 ```
 POST /auth/login
 ```
-**Body:**
+**Mô tả:** Xác thực người dùng và trả về JWT access token.
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| email | string | Yes | Email đã đăng ký |
+| password | string | Yes | Mật khẩu |
+
+**Example:**
 ```json
 {
   "email": "user@example.com",
@@ -75,98 +142,231 @@ POST /auth/login
 }
 ```
 
-### Get Me
+### Get Me - Lấy thông tin user hiện tại
 ```
 GET /auth/me
 ```
-**Headers:** `Authorization: Bearer <accessToken>`
+**Mô tả:** Lấy thông tin profile của user đang đăng nhập.
 
-### Logout
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Response:** `200 OK`
+
+### Logout - Đăng xuất
 ```
 POST /auth/logout
 ```
-**Headers:** `Authorization: Bearer <accessToken>`
+**Mô tả:** Xóa refresh token khỏi cookie, vô hiệu hóa session.
 
-### Refresh Token
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Response:** `200 OK`
+
+### Refresh Token - Làm mới token
 ```
 POST /auth/refresh
 ```
-**Cookies:** Reads `refreshToken` from cookie
+**Mô tả:** Sử dụng refresh token trong cookie để lấy access token mới.
 
-### Forgot Password
+**Cookies:** `refreshToken` (HTTP-only cookie)
+
+**Response:** `200 OK`
+
+### Forgot Password - Quên mật khẩu
 ```
 POST /auth/forgot-password
 ```
-**Body:**
+**Mô tả:** Gửi email chứa link đặt lại mật khẩu.
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| email | string | Yes | Email đã đăng ký |
+
+**Example:**
 ```json
 {
   "email": "user@example.com"
 }
 ```
+**Response:** `200 OK`
 
-### Reset Password
+### Reset Password - Đặt lại mật khẩu
 ```
 POST /auth/reset-password/:resetToken
 ```
-**Body:**
+**Mô tả:** Đặt lại mật khẩu mới sử dụng token từ email.
+
+**Headers:** Không cần auth token
+
+**URL Params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| resetToken | string | Token từ email quên mật khẩu |
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| newPassword | string | Yes | Mật khẩu mới |
+
+**Example:**
 ```json
 {
   "newPassword": "NewSecurePass123"
 }
 ```
+**Response:** `200 OK`
 
 ---
 
 ## Categories
 
-### Get All Categories
+### Get All Categories - Lấy danh sách danh mục
 ```
 GET /categories
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| parentId | string | Filter by parent category ID |
-| isActive | boolean | Filter by active status |
-| sortBy | string | Sort field (e.g., `createdAt:desc`) |
-| limit | number | Items per page (default: 20) |
-| page | number | Page number (default: 1) |
+**Mô tả:** Lấy danh sách tất cả các danh mục khóa học với bộ lọc và phân trang.
 
-### Get Category Tree
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| parentId | string (ObjectId) | No | - | Lọc theo danh mục cha |
+| isActive | boolean | No | - | Lọc theo trạng thái hoạt động |
+| sortBy | string | No | createdAt:desc | Trường sắp xếp |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+
+**Example Request:**
+```
+GET /categories?isActive=true&limit=10&page=1
+```
+
+**Response:** `200 OK`
+```json
+{
+  "status": "success",
+  "data": {
+    "docs": [...],
+    "totalDocs": 25,
+    "limit": 10,
+    "page": 1,
+    "totalPages": 3
+  }
+}
+```
+
+### Get Category Tree - Lấy cây danh mục
 ```
 GET /categories/tree
 ```
-Returns hierarchical category structure.
+**Mô tả:** Trả về cấu trúc phân cấp của tất cả danh mục (dạng cây).
 
-### Get Root Categories
+**Headers:** Không cần authentication (public endpoint)
+
+**Response:** `200 OK` - Trả về nested structure của categories
+
+### Get Root Categories - Lấy danh mục gốc
 ```
 GET /categories/roots
 ```
-Returns only top-level categories (parentId: null).
+**Mô tả:** Trả về chỉ các danh mục cấp cao nhất (không có parentId).
 
-### Get Category by Slug
+**Headers:** Không cần authentication (public endpoint)
+
+### Get Category by Slug - Lấy danh mục theo slug
 ```
 GET /categories/slug/:slug
 ```
+**Mô tả:** Tìm danh mục theo slug URL-friendly.
 
-### Get Category by ID
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| slug | string | Yes | Slug của danh mục (VD: "programming") |
+
+**Response:** `200 OK`
+
+### Get Category by ID - Lấy danh mục theo ID
 ```
 GET /categories/:categoryId
 ```
-**Auth:** Required (role: `getCategory`)
+**Mô tả:** Lấy chi tiết một danh mục cụ thể.
 
-### Get Child Categories
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `getCategory`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| categoryId | string (ObjectId) | Yes | ID của danh mục |
+
+### Get Child Categories - Lấy danh mục con
 ```
 GET /categories/:categoryId/children
 ```
-**Auth:** Required (role: `getCategories`)
+**Mô tả:** Lấy tất cả danh mục con của một danh mục.
 
-### Create Category
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `getCategories`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| categoryId | string (ObjectId) | Yes | ID của danh mục cha |
+
+### Create Category - Tạo danh mục mới
 ```
 POST /categories
 ```
-**Auth:** Required (role: `manageCategories`)
-**Body:**
+**Mô tả:** Tạo một danh mục khóa học mới (có thể là danh mục cha hoặc con).
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `manageCategories`
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| name | string | Yes | - | Tên danh mục (tối đa 100 ký tự) |
+| parentId | string (ObjectId) | No | null | ID danh mục cha (null = danh mục gốc) |
+| icon | string | No | - | Icon identifier (tối đa 50 ký tự) |
+| colorHex | string | No | - | Mã màu HEX (VD: #3B82F6) |
+| description | string | No | - | Mô tả danh mục (tối đa 500 ký tự) |
+| sortOrder | number | No | 0 | Thứ tự hiển thị |
+| level | number | No | 0 | Cấp độ trong cây |
+| isActive | boolean | No | true | Trạng thái hoạt động |
+
+**Example:**
 ```json
 {
   "name": "Programming",
@@ -177,59 +377,147 @@ POST /categories
   "description": "Programming courses"
 }
 ```
+**Response:** `201 Created`
 
-### Update Category
+### Update Category - Cập nhật danh mục
 ```
 PATCH /categories/:categoryId
 ```
-**Auth:** Required (role: `manageCategories`)
+**Mô tả:** Cập nhật thông tin một danh mục.
 
-### Delete Category
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `manageCategories`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| categoryId | string (ObjectId) | Yes | ID của danh mục |
+
+**Request Body:** Có thể cập nhật bất kỳ trường nào (trừ _id)
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Delete Category - Xóa danh mục
 ```
 DELETE /categories/:categoryId
 ```
-**Auth:** Required (role: `manageCategories`)
+**Mô tả:** Xóa một danh mục khóa học.
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `manageCategories`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| categoryId | string (ObjectId) | Yes | ID của danh mục |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Courses
 
-### Get All Courses
+### Get All Courses - Lấy danh sách khóa học
 ```
 GET /courses
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| categoryId | string | Filter by category |
-| enrollmentType | string | `public`, `approval`, `invite_only` |
-| level | string | `beginner`, `intermediate`, `advanced`, `expert` |
-| isActive | boolean | Filter by active status |
-| minPrice | number | Minimum price |
-| maxPrice | number | Maximum price |
-| search | string | Search in title |
-| sortBy | string | Sort field |
-| limit | number | Items per page |
-| page | number | Page number |
-| populate | string | `formats`, `categoryId` |
+**Mô tả:** Lấy danh sách khóa học với nhiều bộ lọc: danh mục, mức giá, loại đăng ký, level.
 
-### Get Course by Slug
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| categoryId | string (ObjectId) | No | - | Lọc theo danh mục |
+| enrollmentType | string | No | - | `public`, `approval`, `invite_only` |
+| level | string | No | - | `beginner`, `intermediate`, `advanced`, `expert` |
+| isActive | boolean | No | - | Lọc theo trạng thái hoạt động |
+| minPrice | number | No | - | Giá tối thiểu |
+| maxPrice | number | No | - | Giá tối đa (phải >= minPrice) |
+| search | string | No | - | Tìm kiếm trong tiêu đề (tối đa 100 ký tự) |
+| sortBy | string | No | createdAt:desc | Trường sắp xếp |
+| limit | number | No | 12 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+| populate | string | No | - | Populate related: `formats`, `categoryId` |
+
+**Example Request:**
+```
+GET /courses?categoryId=64abc123&minPrice=5000000&level=beginner&populate=formats,categoryId&limit=10
+```
+
+### Get Course by Slug - Lấy khóa học theo slug
 ```
 GET /courses/slug/:slug
 ```
+**Mô tả:** Tìm khóa học theo slug URL-friendly.
 
-### Get Course by ID
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| slug | string | Yes | Slug của khóa học |
+
+### Get Course by ID - Lấy khóa học theo ID
 ```
 GET /courses/:courseId
 ```
-**Query:** `?populate=formats,categoryId`
+**Mô tả:** Lấy chi tiết một khóa học cụ thể.
 
-### Create Course
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Query:** `?populate=formats,categoryId` để populate thông tin liên quan
+
+### Create Course - Tạo khóa học mới
 ```
 POST /courses
 ```
-**Auth:** Required (role: `managerCourses`)
-**Body:**
+**Mô tả:** Tạo một khóa học mới. Sau khi tạo, cần tạo CourseFormat để có thể đăng ký.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourses`
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| categoryId | string (ObjectId) | Yes | - | ID danh mục |
+| title | string | Yes | - | Tiêu đề (3-255 ký tự) |
+| description | string | No | "" | Mô tả khóa học |
+| durationWeeks | number | Yes | - | Thời lượng (1-104 tuần) |
+| basePrice | number | Yes | - | Giá cơ bản (VND) |
+| enrollmentType | string | No | public | `public`, `approval`, `invite_only` |
+| level | string | No | null | `beginner`, `intermediate`, `advanced`, `expert` |
+| requiredSkills | array | No | [] | Kỹ năng yêu cầu |
+| isActive | boolean | No | true | Trạng thái hoạt động |
+
+**Example:**
 ```json
 {
   "categoryId": "64abc123...",
@@ -245,50 +533,132 @@ POST /courses
   ]
 }
 ```
+**Response:** `201 Created`
 
-### Update Course
+### Update Course - Cập nhật khóa học
 ```
 PATCH /courses/:courseId
 ```
-**Auth:** Required (role: `managerCourses`)
+**Mô tả:** Cập nhật thông tin khóa học.
 
-### Toggle Course Status
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourses`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Toggle Course Status - Bật/tắt khóa học
 ```
 PATCH /courses/:courseId/toggle
 ```
-**Auth:** Required (role: `managerCourses`)
+**Mô tả:** Chuyển đổi trạng thái hoạt động của khóa học (active ↔ inactive).
 
-### Delete Course
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourses`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+### Delete Course - Xóa khóa học
 ```
 DELETE /courses/:courseId
 ```
-**Auth:** Required (role: `deleteCourse`)
+**Mô tả:** Xóa vĩnh viễn một khóa học và tất cả dữ liệu liên quan.
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `deleteCourse`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Course Formats
 
-### Get Course Formats
+### Get Course Formats - Lấy danh sách định dạng khóa học
 ```
 GET /courses/:courseId/formats
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| formatType | string | `oncampus`, `online`, `remote`, `hybrid` |
-| isActive | boolean | Filter by active status |
+**Mô tả:** Lấy tất cả định dạng học tập của một khóa học (online, oncampus, remote, hybrid).
 
-### Get Course Format by ID
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| formatType | string | No | - | `oncampus`, `online`, `remote`, `hybrid` |
+| isActive | boolean | No | - | Lọc theo trạng thái |
+
+### Get Course Format by ID - Lấy định dạng theo ID
 ```
 GET /courses/:courseId/formats/:courseFormatId
 ```
+**Mô tả:** Lấy chi tiết một định dạng học tập cụ thể.
 
-### Create Course Format
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng |
+
+### Create Course Format - Tạo định dạng khóa học
 ```
 POST /courses/:courseId/formats
 ```
-**Auth:** Required (role: `managerCourseFormat`)
-**Body (Online):**
+**Mô tả:** Tạo một định dạng học tập mới cho khóa học (VD: phiên bản online, phiên bản oncampus).
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourseFormat`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Request Body (Online):**
 ```json
 {
   "formatType": "online",
@@ -302,7 +672,8 @@ POST /courses/:courseId/formats
   }
 }
 ```
-**Body (On-campus):**
+
+**Request Body (On-campus):**
 ```json
 {
   "formatType": "oncampus",
@@ -315,7 +686,8 @@ POST /courses/:courseId/formats
   }
 }
 ```
-**Body (Remote):**
+
+**Request Body (Remote):**
 ```json
 {
   "formatType": "remote",
@@ -328,7 +700,8 @@ POST /courses/:courseId/formats
   }
 }
 ```
-**Body (Hybrid):**
+
+**Request Body (Hybrid):**
 ```json
 {
   "formatType": "hybrid",
@@ -343,47 +716,141 @@ POST /courses/:courseId/formats
 }
 ```
 
-### Update Course Format
+**Detail Schema Fields:**
+
+| formatType | Required Fields |
+|------------|-----------------|
+| oncampus | campusId, hoursPerWeek, maxSeats |
+| online | Không có field bắt buộc |
+| remote | hoursPerWeek, maxSeats |
+| hybrid | campusId, oncampusHours, remoteHours, maxSeats |
+
+**Response:** `201 Created`
+
+### Update Course Format - Cập nhật định dạng
 ```
 PATCH /courses/:courseId/formats/:courseFormatId
 ```
-**Auth:** Required (role: `managerCourseFormat`)
+**Mô tả:** Cập nhật thông tin định dạng học tập. Lưu ý: không cho phép đổi formatType sau khi tạo.
 
-### Toggle Course Format
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourseFormat`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng |
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Toggle Course Format - Bật/tắt định dạng
 ```
 PATCH /courses/:courseId/formats/:courseFormatId/toggle
 ```
-**Auth:** Required (role: `managerCourseFormat`)
+**Mô tả:** Chuyển đổi trạng thái hoạt động của định dạng học tập.
 
-### Delete Course Format
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCourseFormat`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng |
+
+### Delete Course Format - Xóa định dạng
 ```
 DELETE /courses/:courseId/formats/:courseFormatId
 ```
-**Auth:** Required (role: `deleteCourseFormat`)
+**Mô tả:** Xóa vĩnh viễn một định dạng học tập.
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `deleteCourseFormat`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Cohorts
 
-### Get Cohorts (Nested)
+### Get Cohorts - Lấy danh sách khóa (Nested)
 ```
 GET /course-formats/:courseFormatId/cohorts
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| status | string | `upcoming`, `ongoing`, `completed`, `cancelled` |
-| sortBy | string | `startDate:asc`, `startDate:desc`, `createdAt:desc` |
-| limit | number | Items per page |
-| page | number | Page number |
-| populate | string | `instructors`, `enrollmentCount` |
+**Mô tả:** Lấy danh sách các khóa học (cohorts) của một định dạng khóa học. Mỗi cohort là một lớp học cụ thể với ngày bắt đầu/kết thúc.
 
-### Create Cohort (Nested)
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng khóa học |
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| status | string | No | - | `upcoming`, `ongoing`, `completed`, `cancelled` |
+| sortBy | string | No | startDate:asc | Trường sắp xếp |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+| populate | string | No | - | `instructors`, `enrollmentCount` |
+
+### Create Cohort - Tạo khóa học mới (Nested)
 ```
 POST /course-formats/:courseFormatId/cohorts
 ```
-**Auth:** Required (role: `managerCohorts`)
-**Body:**
+**Mô tả:** Tạo một khóa học mới (lớp học) cho định dạng khóa học. VD: "WebDev 2024-A" bắt đầu ngày 01/03/2024.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCohorts`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseFormatId | string (ObjectId) | Yes | ID của định dạng khóa học |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| name | string | Yes | - | Tên khóa (VD: "WebDev 2024-A") (2-100 ký tự) |
+| startDate | ISO Date | Yes | - | Ngày khai giảng (phải là tương lai) |
+| endDate | ISO Date | Yes | - | Ngày kết thúc (phải sau startDate) |
+| maxSeats | number | No | null | Số chỗ tối đa (null = không giới hạn) |
+
+**Example:**
 ```json
 {
   "name": "WebDev 2024-A",
@@ -392,31 +859,75 @@ POST /course-formats/:courseFormatId/cohorts
   "maxSeats": 30
 }
 ```
+**Response:** `201 Created`
 
-### Get Cohort by ID
+### Get Cohort by ID - Lấy khóa theo ID
 ```
 GET /cohorts/:cohortId
 ```
+**Mô tả:** Lấy chi tiết một khóa học cụ thể.
 
-### Update Cohort
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+
+### Update Cohort - Cập nhật khóa
 ```
 PATCH /cohorts/:cohortId
 ```
-**Auth:** Required (role: `managerCohorts`)
+**Mô tả:** Cập nhật thông tin khóa học (tên, ngày, số chỗ).
 
-### Update Cohort Status
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCohorts`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+
+**Request Body:** Có thể cập nhật: name, startDate, endDate, maxSeats
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Update Cohort Status - Cập nhật trạng thái khóa
 ```
 PATCH /cohorts/:cohortId/status
 ```
-**Auth:** Required (role: `managerCohorts`)
-**Body:**
+**Mô tả:** Thay đổi trạng thái của khóa học hoặc hủy khóa.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCohorts`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+
+**Request Body (Thay đổi trạng thái):**
 ```json
 {
-  "status": "ongoing",
-  "cancelReason": ""
+  "status": "ongoing"
 }
 ```
-Or for cancellation:
+
+**Request Body (Hủy khóa):**
 ```json
 {
   "status": "cancelled",
@@ -424,139 +935,522 @@ Or for cancellation:
 }
 ```
 
-### Assign Instructor
+**Status values:** `upcoming`, `ongoing`, `completed`, `cancelled`
+- **cancelReason:** Bắt buộc khi status là `cancelled`
+
+### Assign Instructor - Gán giảng viên
 ```
 POST /cohorts/:cohortId/instructors
 ```
-**Auth:** Required (role: `managerCohorts`)
-**Body:**
+**Mô tả:** Gán một giảng viên vào khóa học.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCohorts`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| instructorId | string (ObjectId) | Yes | - | ID của giảng viên |
+| role | string | No | assistant | `lead`, `assistant`, `guest` |
+
+**Example:**
 ```json
 {
   "instructorId": "64abc123...",
   "role": "lead"
 }
 ```
-**Roles:** `lead`, `assistant`, `guest`
 
-### Remove Instructor
+### Remove Instructor - Xóa giảng viên khỏi khóa
 ```
 DELETE /cohorts/:cohortId/instructors/:instructorId
 ```
-**Auth:** Required (role: `managerCohorts`)
+**Mô tả:** Xóa một giảng viên khỏi khóa học.
 
-### Delete Cohort
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCohorts`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+**Response:** `204 No Content`
+
+### Delete Cohort - Xóa khóa học
 ```
 DELETE /cohorts/:cohortId
 ```
-**Auth:** Required (role: `admin`)
+**Mô tả:** Xóa vĩnh viễn một khóa học (chỉ admin mới có quyền).
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `admin`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Enrollments
 
-### Enroll (Public Course)
+### Enroll - Đăng ký khóa học (Public)
 ```
 POST /enrollments
 ```
-**Auth:** Required (role: `enroll`)
-**Body:**
+**Mô tả:** Đăng ký trực tiếp vào khóa học có enrollmentType là `public`. Không cần phê duyệt.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `enroll`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học muốn đăng ký |
+
+**Example:**
 ```json
 {
   "cohortId": "64abc123..."
 }
 ```
+**Response:** `201 Created` - Tạo enrollment thành công
 
-### Request Enrollment (Approval Course)
+### Request Enrollment - Yêu cầu đăng ký (Approval)
 ```
 POST /enrollments/request
 ```
-**Auth:** Required (role: `enroll`)
-**Body:**
+**Mô tả:** Gửi yêu cầu đăng ký cho khóa học có enrollmentType là `approval`. Cần cung cấp lý do tham gia.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `enroll`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| cohortId | string (ObjectId) | Yes | ID của khóa học |
+| motivation | string | Yes | Lý do muốn tham gia (50-2000 ký tự) |
+
+**Example:**
 ```json
 {
   "cohortId": "64abc123...",
-  "motivation": "I want to learn web development to change my career..."
+  "motivation": "I want to learn web development to change my career from sales to tech..."
 }
 ```
+**Response:** `201 Created` - Tạo enrollment request, chờ phê duyệt
 
-### Review Enrollment Request
+### Review Enrollment Request - Phê duyệt yêu cầu
 ```
 PATCH /enrollments/request/:requestId/review
 ```
-**Auth:** Required (role: `managerEnrolls`)
-**Body:**
+**Mô tả:** Phê duyệt hoặc từ chối yêu cầu đăng ký.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerEnrolls`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| requestId | string (ObjectId) | Yes | ID của enrollment request |
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| action | string | Yes | `approved` hoặc `rejected` |
+| rejectionReason | string | Conditional | Bắt buộc khi action = `rejected` (tối đa 1000 ký tự) |
+
+**Example (Phê duyệt):**
 ```json
 {
   "action": "approved",
   "rejectionReason": ""
 }
 ```
-**Actions:** `approved`, `rejected`
 
-### Get Pending Requests
+**Example (Từ chối):**
+```json
+{
+  "action": "rejected",
+  "rejectionReason": "Không đáp ứng yêu cầu đầu vào"
+}
+```
+
+### Get Pending Requests - Lấy danh sách yêu cầu chờ
 ```
 GET /enrollments/requests
 ```
-**Auth:** Required (role: `managerEnrolls`)
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| cohortId | string | Filter by cohort |
-| courseId | string | Filter by course |
-| status | string | `pending`, `approved`, `rejected` |
-| sortBy | string | Sort field |
-| limit | number | Items per page |
-| page | number | Page number |
+**Mô tả:** Lấy danh sách các yêu cầu đăng ký đang chờ phê duyệt.
 
-### Send Invite (Invite-Only Course)
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerEnrolls`
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| cohortId | string (ObjectId) | No | - | Lọc theo khóa học |
+| courseId | string (ObjectId) | No | - | Lọc theo khóa |
+| status | string | No | pending | `pending`, `approved`, `rejected` |
+| sortBy | string | No | createdAt:asc | Trường sắp xếp |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+
+### Send Invite - Gửi lời mời (Invite-Only)
 ```
 POST /enrollments/invite
 ```
-**Auth:** Required (role: `managerEnrolls`)
-**Body:**
+**Mô tả:** Gửi lời mời đăng ký cho khóa học có enrollmentType là `invite_only`. Email chứa link đăng ký với token.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerEnrolls`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+| email | string | Yes | Email người được mời (phải là email hợp lệ) |
+
+**Example:**
 ```json
 {
   "courseId": "64abc123...",
   "email": "student@example.com"
 }
 ```
+**Response:** `201 Created` - Gửi email invitation thành công
 
-### Accept Invite
+### Accept Invite - Chấp nhận lời mời
 ```
 POST /enrollments/accept-invite
 ```
-**Auth:** Required (role: `enroll`)
-**Body:**
+**Mô tả:** Chấp nhận lời mời đăng ký, ghi danh vào khóa học.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `enroll`
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| token | string | Yes | Token từ email invitation (64 ký tự) |
+| cohortId | string (ObjectId) | Yes | ID của khóa học muốn đăng ký |
+
+**Example:**
 ```json
 {
-  "token": "abc123...",
+  "token": "abc123def456...",
   "cohortId": "64abc123..."
+}
+```
+**Response:** `201 Created` - Đăng ký thành công
+
+---
+
+## Enrollment Requests
+
+### Get All Enrollment Requests - Lấy danh sách yêu cầu
+```
+GET /enrollment-requests
+```
+**Mô tả:** Lấy danh sách tất cả yêu cầu đăng ký với nhiều bộ lọc (dùng cho quản lý và tracking).
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `getEnrollmentRequests`
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| status | string | No | - | `pending`, `called`, `interviewed`, `approved`, `rejected` |
+| courseId | string (ObjectId) | No | - | Lọc theo khóa học |
+| cohortId | string (ObjectId) | No | - | Lọc theo khóa |
+| assignedCounselor | string (ObjectId) | No | - | Lọc theo counselor được gán |
+| sortBy | string | No | createdAt:asc | Trường sắp xếp |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+
+**Example Request:**
+```
+GET /enrollment-requests?status=pending&assignedCounselor=64abc123&limit=10
+```
+
+### Assign Counselor - Gán counselor
+```
+PATCH /enrollment-requests/:requestId/assign
+```
+**Mô tả:** Gán một counselor (tư vấn viên) phụ trách yêu cầu đăng ký.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `assignCounselor`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| requestId | string (ObjectId) | Yes | ID của enrollment request |
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| counselorId | string (ObjectId) | Yes | ID của counselor được gán |
+
+**Example:**
+```json
+{
+  "counselorId": "64abc123..."
+}
+```
+
+### Log Call - Ghi nhận cuộc gọi
+```
+POST /enrollment-requests/:requestId/call
+```
+**Mô tả:** Ghi nhận thông tin cuộc gọi tư vấn với người yêu cầu.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `logCall`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| requestId | string (ObjectId) | Yes | ID của enrollment request |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| outcome | string | Yes | - | Kết quả: `reached`, `no_answer`, `rescheduled` |
+| notes | string | No | "" | Ghi chú cuộc gọi (tối đa 1000 ký tự) |
+| rescheduleAt | ISO Date | Conditional | - | Bắt buộc khi outcome = `rescheduled` |
+
+**Example:**
+```json
+{
+  "outcome": "reached",
+  "notes": "Khách hàng quan tâm, cần gọi lại để tư vấn chi tiết hơn"
+}
+```
+
+**Example (Reschedule):**
+```json
+{
+  "outcome": "rescheduled",
+  "notes": "Khách bận họp",
+  "rescheduleAt": "2024-03-15T14:00:00Z"
+}
+```
+
+### Log Interview - Ghi nhận phỏng vấn
+```
+POST /enrollment-requests/:requestId/interview
+```
+**Mô tả:** Ghi nhận thông tin phỏng vấn và đánh giá người yêu cầu.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `logInterview`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| requestId | string (ObjectId) | Yes | ID của enrollment request |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| recommendation | string | Yes | - | Đánh giá: `approve`, `reject`, `consider` |
+| notes | string | No | "" | Ghi chú phỏng vấn (tối đa 2000 ký tự) |
+| score | number | No | null | Điểm phỏng vấn (0-10) |
+
+**Example:**
+```json
+{
+  "recommendation": "approve",
+  "notes": "Ứng viên có nền tảng tốt, motivated để học",
+  "score": 8
+}
+```
+
+### Review Enrollment Request - Phê duyệt cuối cùng
+```
+PATCH /enrollment-requests/:requestId/review
+```
+**Mô tả:** Phê duyệt hoặc từ chối yêu cầu đăng ký (sau khi đã gọi điện và phỏng vấn).
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `reviewEnrollmentRequest`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| requestId | string (ObjectId) | Yes | ID của enrollment request |
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| action | string | Yes | `approved` hoặc `rejected` |
+| rejectionReason | string | Conditional | Bắt buộc khi action = `rejected` (tối đa 1000 ký tự) |
+
+**Example:**
+```json
+{
+  "action": "approved",
+  "rejectionReason": ""
 }
 ```
 
 ---
 
+---
+
 ## Financing Options
 
-### Get Financing by Enrollment
+### Get Financing by Enrollment - Lấy phương thức thanh toán
 ```
 GET /enrollments/:enrollmentId/financing
 ```
-**Auth:** Required (roles: `getFinancing` or `getMyFinancing`)
+**Mô tả:** Lấy thông tin phương thức thanh toán của một enrollment.
 
-### Create Financing Option
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `getFinancing` (manager) hoặc `getMyFinancing` (student xem own financing)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| enrollmentId | string (ObjectId) | Yes | ID của enrollment |
+
+### Create Financing Option - Tạo phương thức thanh toán
 ```
 POST /enrollments/:enrollmentId/financing
 ```
-**Auth:** Required (role: `managerFinancing`)
-**Body (Full Payment):**
+**Mô tả:** Tạo phương thức thanh toán cho enrollment (full, installment, scholarship, ISA).
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerFinancing`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| enrollmentId | string (ObjectId) | Yes | ID của enrollment |
+
+**Request Body (Full Payment):**
 ```json
 {
   "type": "full",
   "totalAmount": 15000000
 }
 ```
-**Body (Installment):**
+
+**Request Body (Installment - Trả góp):**
 ```json
 {
   "type": "installment",
@@ -568,7 +1462,9 @@ POST /enrollments/:enrollmentId/financing
   ]
 }
 ```
-**Body (Scholarship):**
+**Validation:** Tổng các installment phải bằng totalAmount, tối thiểu 2 đợt.
+
+**Request Body (Scholarship - Học bổng):**
 ```json
 {
   "type": "scholarship",
@@ -578,7 +1474,8 @@ POST /enrollments/:enrollmentId/financing
   "discountPercentage": 33.33
 }
 ```
-**Body (ISA - Income Share Agreement):**
+
+**Request Body (ISA - Income Share Agreement):**
 ```json
 {
   "type": "isa",
@@ -589,18 +1486,63 @@ POST /enrollments/:enrollmentId/financing
 }
 ```
 
-### Get Financing Option
+**Common Fields:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| type | string | Yes | `full`, `installment`, `scholarship`, `isa` |
+| totalAmount | number | Yes | Tổng số tiền (VND) |
+| provider | string | No | Nhà cung cấp thanh toán |
+| notes | string | No | Ghi chú (tối đa 1000 ký tự) |
+
+**Response:** `201 Created`
+
+### Get Financing Option - Lấy chi tiết financing
 ```
 GET /financing/:financingId
 ```
-**Auth:** Required (roles: `getFinancing` or `getMyFinancing`)
+**Mô tả:** Lấy chi tiết một phương thức thanh toán cụ thể.
 
-### Record Payment
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `getFinancing` hoặc `getMyFinancing`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| financingId | string (ObjectId) | Yes | ID của financing option |
+
+### Record Payment - Ghi nhận thanh toán
 ```
 POST /financing/:financingId/payment
 ```
-**Auth:** Required (role: `managerFinancing`)
-**Body:**
+**Mô tả:** Ghi nhận một khoản thanh toán cho financing option.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerFinancing`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| financingId | string (ObjectId) | Yes | ID của financing option |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| amount | number | Yes | - | Số tiền thanh toán (>= 1) |
+| installmentId | string (ObjectId) | No | null | ID của đợt thanh toán (nếu là installment) |
+| notes | string | No | "" | Ghi chú (tối đa 500 ký tự) |
+
+**Example:**
 ```json
 {
   "amount": 5000000,
@@ -609,181 +1551,463 @@ POST /financing/:financingId/payment
 }
 ```
 
-### Update ISA
+### Update ISA - Cập nhật ISA
 ```
 PATCH /financing/:financingId/isa
 ```
-**Auth:** Required (role: `managerFinancing`)
-**Body:**
-```json
-{
-  "isaStartDate": "2024-07-01T00:00:00Z",
-  "isaPercentage": 15,
-  "isaDurationMonths": 18
-}
-```
+**Mô tả:** Cập nhật thông tin ISA (Income Share Agreement).
 
-### Cancel Financing
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerFinancing`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| financingId | string (ObjectId) | Yes | ID của financing option |
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| isaStartDate | ISO Date | Yes | Ngày bắt đầu ISA |
+| isaPercentage | number | No | Phần trăm chia sẻ thu nhập (0-100) |
+| isaDurationMonths | number | No | Thời hạn ISA (tháng) |
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Cancel Financing - Hủy phương thức thanh toán
 ```
 PATCH /financing/:financingId/cancel
 ```
-**Auth:** Required (role: `cancelFinancing`)
-**Body:**
-```json
-{
-  "notes": "Student requested cancellation"
-}
-```
+**Mô tả:** Hủy phương thức thanh toán cho enrollment.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `cancelFinancing`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| financingId | string (ObjectId) | Yes | ID của financing option |
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| notes | string | No | "" | Lý do hủy (tối đa 500 ký tự) |
+
+---
 
 ---
 
 ## Campuses
 
-### Get All Campuses
+### Get All Campuses - Lấy danh sách campus
 ```
 GET /campuses
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| isActive | boolean | Filter by active status |
-| city | string | Filter by city |
-| sortBy | string | Sort field |
-| limit | number | Items per page |
-| page | number | Page number |
+**Mô tả:** Lấy danh sách tất cả các campus (cơ sở đào tạo) với bộ lọc.
 
-### Get Campus by ID
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| isActive | boolean | No | - | Lọc theo trạng thái hoạt động |
+| city | string | No | - | Lọc theo thành phố |
+| sortBy | string | No | name:asc | Trường sắp xếp: `name:asc`, `city:asc`, `createdAt:desc` |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+| populate | string | No | - | Populate: `instructorCount` |
+
+### Get Campus by ID - Lấy campus theo ID
 ```
 GET /campuses/:campusId
 ```
+**Mô tả:** Lấy chi tiết một campus cụ thể.
 
-### Create Campus
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| campusId | string (ObjectId) | Yes | ID của campus |
+
+### Create Campus - Tạo campus mới
 ```
 POST /campuses
 ```
-**Auth:** Required (role: `managerCampus`)
-**Body:**
+**Mô tả:** Tạo một campus (cơ sở đào tạo) mới.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCampus`
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| name | string | Yes | - | Tên campus (2-100 ký tự) |
+| city | string | Yes | - | Thành phố |
+| country | string | No | Vietnam | Quốc gia |
+| timezone | string | No | Asia/Ho_Chi_Minh | Múi giờ |
+| address | string | No | "" | Địa chỉ chi tiết |
+| phone | string | No | "" | Số điện thoại |
+| email | string | No | "" | Email campus |
+| isActive | boolean | No | true | Trạng thái hoạt động |
+
+**Example:**
 ```json
 {
   "name": "Hanoi Campus",
   "city": "Hanoi",
   "country": "Vietnam",
   "timezone": "Asia/Ho_Chi_Minh",
-  "address": "123 ABC Street",
+  "address": "123 ABC Street, Ba Dinh District",
   "phone": "02412345678",
   "email": "hanoi@school.edu.vn"
 }
 ```
+**Response:** `201 Created`
 
-### Update Campus
+### Update Campus - Cập nhật campus
 ```
 PATCH /campuses/:campusId
 ```
-**Auth:** Required (role: `managerCampus`)
+**Mô tả:** Cập nhật thông tin campus.
 
-### Toggle Campus
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCampus`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| campusId | string (ObjectId) | Yes | ID của campus |
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Toggle Campus - Bật/tắt campus
 ```
 PATCH /campuses/:campusId/toggle
 ```
-**Auth:** Required (role: `managerCampus`)
+**Mô tả:** Chuyển đổi trạng thái hoạt động của campus.
 
-### Delete Campus
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCampus`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| campusId | string (ObjectId) | Yes | ID của campus |
+
+### Delete Campus - Xóa campus
 ```
 DELETE /campuses/:campusId
 ```
-**Auth:** Required (role: `managerCampus`)
+**Mô tả:** Xóa vĩnh viễn một campus.
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerCampus`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| campusId | string (ObjectId) | Yes | ID của campus |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Instructors
 
-### Get My Profile
+### Get My Profile - Lấy profile giảng viên của tôi
 ```
 GET /instructors/me
 ```
-**Auth:** Required (role: `instructorGetProfile`)
+**Mô tả:** Lấy thông tin profile giảng viên của user đang đăng nhập (phải là instructor).
 
-### Get All Instructors
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `instructorGetProfile`
+
+### Get All Instructors - Lấy danh sách giảng viên
 ```
 GET /instructors
 ```
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| campusId | string | Filter by campus |
-| isActive | boolean | Filter by active status |
-| search | string | Search by name |
-| sortBy | string | Sort field |
-| limit | number | Items per page |
-| page | number | Page number |
-| populate | string | `userId`, `campusId`, `cohorts` |
+**Mô tả:** Lấy danh sách tất cả giảng viên với bộ lọc.
 
-### Get Instructor by ID
+**Content-Type:** `application/json`
+
+**Headers:** Không cần authentication (public endpoint)
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| campusId | string (ObjectId) | No | - | Lọc theo campus |
+| isActive | boolean | No | - | Lọc theo trạng thái hoạt động |
+| search | string | No | - | Tìm kiếm theo tên (tối đa 100 ký tự) |
+| sortBy | string | No | createdAt:desc | Trường sắp xếp |
+| limit | number | No | 20 | Số item mỗi trang (1-100) |
+| page | number | No | 1 | Số trang |
+| populate | string | No | - | Populate: `userId`, `campusId`, `cohorts` |
+
+### Get Instructor by ID - Lấy giảng viên theo ID
 ```
 GET /instructors/:instructorId
 ```
+**Mô tả:** Lấy chi tiết một giảng viên cụ thể.
 
-### Create Instructor
+**Headers:** Không cần authentication (public endpoint)
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+### Create Instructor - Tạo giảng viên mới
 ```
 POST /instructors
 ```
-**Auth:** Required (role: `managerInstructor`)
-**Body:**
+**Mô tả:** Tạo hồ sơ giảng viên cho một user đã có tài khoản.
+
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerInstructor`
+
+**Request Body:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| userId | string (ObjectId) | Yes | - | ID của user (đã có account) |
+| campusId | string (ObjectId) | Yes | - | ID của campus giảng viên thuộc về |
+| bio | string | No | "" | Tiểu sử (tối đa 2000 ký tự) |
+| linkedinUrl | string | No | "" | URL LinkedIn (phải là URI hợp lệ) |
+| expertise | array | No | [] | Danh sách chuyên môn (tối đa 20 phần tử, mỗi phần tử tối đa 50 ký tự) |
+| avatarUrl | string | No | "" | URL avatar (phải là URI hợp lệ) |
+| isActive | boolean | No | true | Trạng thái hoạt động |
+
+**Example:**
 ```json
 {
   "userId": "64abc123...",
   "campusId": "64abc123...",
-  "bio": "Senior web developer with 10 years experience",
-  "linkedinUrl": "https://linkedin.com/in/...",
-  "expertise": ["React", "Node.js", "MongoDB"]
+  "bio": "Senior web developer with 10 years experience in full-stack development",
+  "linkedinUrl": "https://linkedin.com/in/johndoe",
+  "expertise": ["React", "Node.js", "MongoDB", "TypeScript"]
 }
 ```
+**Response:** `201 Created`
 
-### Update Instructor
+### Update Instructor - Cập nhật giảng viên
 ```
 PATCH /instructors/:instructorId
 ```
-**Auth:** Required (role: `updateInstructor`)
+**Mô tả:** Cập nhật thông tin giảng viên.
 
-### Toggle Instructor
+**Content-Type:** `application/json`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Content-Type | application/json | Yes |
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `updateInstructor`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+**Validation:** Cần ít nhất 1 trường để cập nhật
+
+### Toggle Instructor - Bật/tắt giảng viên
 ```
 PATCH /instructors/:instructorId/toggle
 ```
-**Auth:** Required (role: `managerInstructor`)
+**Mô tả:** Chuyển đổi trạng thái hoạt động của giảng viên.
 
-### Delete Instructor
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerInstructor`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+### Delete Instructor - Xóa giảng viên
 ```
 DELETE /instructors/:instructorId
 ```
-**Auth:** Required (role: `managerInstructor`)
+**Mô tả:** Xóa vĩnh viễn hồ sơ giảng viên.
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `managerInstructor`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+**Response:** `204 No Content`
+
+---
 
 ---
 
 ## Upload
 
-### Upload User Avatar
+### Upload User Avatar - Tải lên avatar người dùng
 ```
 PATCH /upload/users/:userId/avatar
 ```
-**Auth:** Required
-**Content-Type:** `multipart/form-data`
-**Body:** `file` (image, max 5MB)
+**Mô tả:** Tải lên hoặc cập nhật avatar cho tài khoản người dùng.
 
-### Upload Instructor Avatar
+**Content-Type:** `multipart/form-data`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| userId | string (ObjectId) | Yes | ID của user |
+
+**Form Data:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | File | Yes | Ảnh avatar (định dạng: jpg, jpeg, png, webp, gif) |
+
+**Constraints:**
+- Kích thước tối đa: 5MB
+- Định dạng: image/*
+
+**Response:** `200 OK`
+```json
+{
+  "status": "success",
+  "data": {
+    "url": "https://res.cloudinary.com/.../avatar.jpg"
+  }
+}
+```
+
+### Upload Instructor Avatar - Tải lên avatar giảng viên
 ```
 PATCH /upload/instructors/:instructorId/avatar
 ```
-**Auth:** Required (role: `uploadInstructorAvatar`)
-**Content-Type:** `multipart/form-data`
-**Body:** `file` (image, max 5MB)
+**Mô tả:** Tải lên hoặc cập nhật avatar cho hồ sơ giảng viên.
 
-### Upload Course Thumbnail
+**Content-Type:** `multipart/form-data`
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `uploadInstructorAvatar`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| instructorId | string (ObjectId) | Yes | ID của giảng viên |
+
+**Form Data:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | File | Yes | Ảnh avatar (định dạng: jpg, jpeg, png, webp, gif) |
+
+**Constraints:**
+- Kích thước tối đa: 5MB
+- Định dạng: image/*
+
+**Response:** `200 OK`
+
+### Upload Course Thumbnail - Tải lên thumbnail khóa học
 ```
 PATCH /upload/courses/:courseId/thumbnail
 ```
-**Auth:** Required (role: `uploadThumbnail`)
+**Mô tả:** Tải lên hoặc cập nhật thumbnail cho khóa học.
+
 **Content-Type:** `multipart/form-data`
-**Body:** `file` (image, max 5MB)
+
+**Headers:**
+| Header | Value | Required |
+|--------|-------|----------|
+| Authorization | Bearer {accessToken} | Yes |
+
+**Yêu cầu quyền:** `uploadThumbnail`
+
+**URL Params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| courseId | string (ObjectId) | Yes | ID của khóa học |
+
+**Form Data:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | File | Yes | Ảnh thumbnail (định dạng: jpg, jpeg, png, webp, gif) |
+
+**Constraints:**
+- Kích thước tối đa: 5MB
+- Định dạng: image/*
+
+**Response:** `200 OK`
+
+---
 
 ---
 
@@ -966,12 +2190,33 @@ PATCH /upload/courses/:courseId/thumbnail
   "status": "pending",
   "motivation": "I want to learn...",
   "rejectionReason": "",
+  "assignedCounselor": "64abc123...",
+  "calls": [
+    {
+      "_id": "...",
+      "outcome": "reached",
+      "notes": "Gọi thành công",
+      "rescheduleAt": null,
+      "createdAt": "2024-02-10T10:00:00Z"
+    }
+  ],
+  "interviews": [
+    {
+      "_id": "...",
+      "recommendation": "approve",
+      "notes": "Ứng viên tốt",
+      "score": 8,
+      "createdAt": "2024-02-15T14:00:00Z"
+    }
+  ],
   "reviewedBy": "64abc123...",
   "reviewedAt": null,
   "createdAt": "2024-02-01T00:00:00Z"
 }
 ```
-**status:** `pending`, `approved`, `rejected`
+**status:** `pending`, `called`, `interviewed`, `approved`, `rejected`
+**call.outcome:** `reached`, `no_answer`, `rescheduled`
+**interview.recommendation:** `approve`, `reject`, `consider`
 
 ### CourseInvite
 ```json
@@ -993,13 +2238,22 @@ PATCH /upload/courses/:courseId/thumbnail
 
 ## Roles & Permissions
 
+### Role Hierarchy
+| Role Type | Description |
+|------------|-------------|
+| student | Học viên - có thể đăng ký khóa học, xem tài chính của mình |
+| instructor | Giảng viên - xem profile, upload avatar, xem financing |
+| admin | Quản trị viên - toàn quyền trên hệ thống |
+
+### Permission Matrix
+
 | Role | Permissions |
 |------|-------------|
 | student | `enroll`, `getMyFinancing`, `cancelFinancing` |
 | instructor | `instructorGetProfile`, `uploadInstructorAvatar`, `getFinancing` |
 | managerCourses | `managerCourses`, `deleteCourse`, `uploadThumbnail` |
 | managerCohorts | `managerCohorts`, `assignInstructor` |
-| managerEnrolls | `managerEnrolls`, `sendInvite` |
+| managerEnrolls | `managerEnrolls`, `sendInvite`, `reviewEnrollmentRequest` |
 | managerFinancing | `managerFinancing`, `recordPayment` |
 | managerCampus | `managerCampus` |
 | managerInstructor | `managerInstructor` |
@@ -1008,13 +2262,17 @@ PATCH /upload/courses/:courseId/thumbnail
 | getCategories | `getCategories` |
 | updateInstructor | `updateInstructor` |
 | deleteCourseFormat | `deleteCourseFormat` |
+| getEnrollmentRequests | `getEnrollmentRequests` |
+| assignCounselor | `assignCounselor` |
+| logCall | `logCall` |
+| logInterview | `logInterview` |
 | admin | All permissions |
 
 ---
 
 ## Common Response Format
 
-### Success
+### Success Response
 ```json
 {
   "status": "success",
@@ -1044,12 +2302,17 @@ Or with message:
 }
 ```
 
-### Error
+### Error Response
 ```json
 {
   "status": "error",
   "message": "Error description",
-  "errors": [...]
+  "errors": [
+    {
+      "field": "email",
+      "message": "Email không hợp lệ"
+    }
+  ]
 }
 ```
 
@@ -1059,40 +2322,65 @@ Or with message:
 
 | Code | Description |
 |------|-------------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content (successful delete) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Not Found |
-| 500 | Internal Server Error |
+| 200 | Success - Yêu cầu thành công |
+| 201 | Created - Tạo mới thành công |
+| 204 | No Content - Xóa thành công (không có response body) |
+| 400 | Bad Request - Lỗi validation |
+| 401 | Unauthorized - Chưa đăng nhập hoặc token hết hạn |
+| 403 | Forbidden - Không có quyền truy cập |
+| 404 | Not Found - Resource không tồn tại |
+| 409 | Conflict - Resource đã tồn tại |
+| 500 | Internal Server Error - Lỗi server |
 
 ---
 
 ## Rate Limiting
 
-- **Production:** Auth endpoints limited to 100 requests per 15 minutes
-- **Development:** No rate limiting
+| Environment | Limit |
+|-------------|-------|
+| Production | Auth endpoints: 100 requests / 15 minutes |
+| Development | No rate limiting |
 
 ---
 
 ## Environment Variables
 
 ```env
+# Server
 NODE_ENV=development
 PORT=3000
+
+# Database
 MONGODB_URL=mongodb://localhost:27017/elearning
+
+# JWT Authentication
 JWT_SECRET=your-secret-key
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 JWT_RESET_PASSWORD_EXPIRES_IN=15m
 JWT_EMAIL_VERIFY_EXPIRES_IN=15m
+
+# Cloudinary (File Upload)
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+
+# Email (Mailjet)
 MAILJET_API_KEY=your-api-key
 MAILJET_API_SECRET=your-api-secret
 MAILJET_FROM_EMAIL=noreply@example.com
 MAILJET_FROM_NAME=E-Learning
 ```
+
+---
+
+## Webhook Events (Future)
+
+| Event | Description |
+|-------|-------------|
+| enrollment.created | Khi học viên đăng ký thành công |
+| enrollment.approved | Khi yêu cầu đăng ký được phê duyệt |
+| enrollment.rejected | Khi yêu cầu đăng ký bị từ chối |
+| payment.recorded | Khi thanh toán được ghi nhận |
+| cohort.started | Khi khóa học bắt đầu |
+| cohort.completed | Khi khóa học kết thúc |
