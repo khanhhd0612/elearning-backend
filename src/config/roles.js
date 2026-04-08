@@ -15,7 +15,19 @@ const allRoles = {
         'managerEnrolls',
         'instructorGetProfile',
         'updateInstructor',
-        'uploadInstructorAvatar'
+        'uploadInstructorAvatar',
+        'managerFinancing',
+        'logInterview', 
+
+    ],
+    counselor: [
+        'getCategories',
+        'getCategory',
+        'getEnrollmentRequests',
+        'logCall',
+        'logInterview',
+        'assignCounselor',
+        'getFinancing',
     ],
     admin: [
         'managerCourses',
@@ -25,6 +37,7 @@ const allRoles = {
         'getCategory',
         'manageCategories',
         'managerCohorts',
+        'deleteCohorts',
         'managerCourseFormat',
         'deleteCourseFormat',
         'enroll',
@@ -32,7 +45,10 @@ const allRoles = {
         'updateInstructor',
         'managerInstructor',
         'uploadInstructorAvatar',
-        'uploadThumbnail'
+        'uploadThumbnail',
+        'managerFinancing',
+        'getFinancing',
+        'reviewEnrollmentRequest',
     ],
 };
 

@@ -24,7 +24,6 @@ const sendVerifyEmail = (user, token) => {
     return sendEmail({ to: user.email, subject, html });
 };
 
-// ── 2. Đặt lại mật khẩu ───────────────────────────────────────────────────
 const sendResetPassword = (user, token) => {
     const { subject, html } = templates.resetPassword({ name: user.name, token });
     return sendEmail({

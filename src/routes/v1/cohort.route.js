@@ -17,7 +17,7 @@ router.route('/:cohortId').get(validate(cohortValidation.getCohort), cohortContr
 
 router.route('/:cohortId').patch(auth('managerCohorts'), validate(cohortValidation.updateCohort), cohortController.updateCohort);
 
-router.route('/:cohortId').delete(auth('admin'), validate(cohortValidation.deleteCohort), cohortController.deleteCohort);
+router.route('/:cohortId').delete(auth('deleteCohorts'), validate(cohortValidation.deleteCohort), cohortController.deleteCohort);
 
 router.route('/:cohortId/status').patch(auth('managerCohorts'), validate(cohortValidation.updateStatus), cohortController.updateStatus);
 

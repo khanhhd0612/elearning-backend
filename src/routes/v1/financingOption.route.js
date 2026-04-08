@@ -6,7 +6,7 @@ const financingController = require('../../controllers/financingOption.controlle
 
 const nestedRouter = express.Router({ mergeParams: true });
 
-nestedRouter.route('/').get(auth('getFinancing', 'getMyFinancing'), validate(financingValidation.getByEnrollment), financingController.getByEnrollment);
+nestedRouter.route('/').get(auth('getFinancing'), validate(financingValidation.getByEnrollment), financingController.getByEnrollment);
 
 nestedRouter.route('/').post(auth('managerFinancing'), validate(financingValidation.createFinancingOption), financingController.createFinancingOption);
 

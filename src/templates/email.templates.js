@@ -60,7 +60,7 @@ const resetPassword = ({ name, token }) => ({
         <h2>Đặt lại mật khẩu</h2>
         <p>Xin chào <strong>${name}</strong>,</p>
         <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn nút bên dưới:</p>
-        <a href="${baseUrl}/reset-password?token=${token}" class="btn">Đặt lại mật khẩu</a>
+        <a href="${baseUrl}/reset-password/${token}" class="btn">Đặt lại mật khẩu</a>
         <p style="font-size:13px; color:#888;">Link có hiệu lực trong <strong>15 phút</strong>. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
     `),
 });

@@ -11,9 +11,27 @@ const createCourse = catchAsync(async (req, res) => {
 });
 
 const getCourses = catchAsync(async (req, res) => {
-    const filter = pick(req.query, ['categoryId', 'formatType', 'enrollmentType', 'level', 'search', 'isActive','minPrice','maxPrice']);
-    const options = pick(req.query, ['sortBy', 'limit', 'page']);
-    const result = await courseService.queryCourses(filter, options);
+    try {
+        const filter = pick(req.query, ['categoryId', 'formatType', 'enrollmentType', 'level', 'search', 'isActive', 'minPrice', 'maxPrice']);
+        const options = pick(req.query, ['sortBy', 'limit', 'page', 'populate']);
+
+        const result = await courseService.queryCourses(filter, options);
+
+        res.status(200).json({
+            status: 'success',
+            data: result,
+        })
+    } catch (error) {
+        console.log(error)
+    }
+});
+
+const getPublicCourses = catchAsync(async (req, res) => {
+    const filter = pick(req.query, ['categoryId', 'formatType', 'enrollmentType', 'level', 'search', 'isActive', 'minPrice', 'maxPrice']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page', 'populate']);
+
+    const result = await courseService.getPublicCourses(filter, options);
+
     res.status(200).json({
         status: 'success',
         data: result,
@@ -72,4 +90,5 @@ module.exports = {
     updateCourse,
     toggleCourse,
     deleteCourse,
+    getPublicCourses
 };

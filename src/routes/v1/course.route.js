@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.route('/').get(validate(courseValidation.getCourses), courseController.getCourses);
 
+router.route('/public').get(validate(courseValidation.getCourses), courseController.getPublicCourses);
+
 router.route('/slug/:slug').get(validate(courseValidation.getCourseBySlug), courseController.getCourseBySlug);
 
 router.route('/:courseId').get(validate(courseValidation.getCourse), courseController.getCourse);

@@ -1,15 +1,11 @@
 const Category = require('../models/category.model');
 const ApiError = require('../utils/ApiError');
 
-// ─── Private helper ───────────────────────────────────────────────────────────
-
 const getCategoryById = async (categoryId) => {
     const category = await Category.findById(categoryId);
     if (!category) throw new ApiError(404, 'Không tìm thấy danh mục');
     return category;
 };
-
-// ─── Query ────────────────────────────────────────────────────────────────────
 
 const getCategories = async (filter, options = {}) => {
     return Category.paginate(filter, {
@@ -64,8 +60,6 @@ const getCategoryTree = async () => {
 
     return roots;
 };
-
-// ─── Mutation ─────────────────────────────────────────────────────────────────
 
 const checkSlugExists = async (slug, excludeId = null) => {
     const query = { slug };

@@ -13,9 +13,9 @@ router.get('/roots', categoryController.getRootCategories);
 
 router.get('/slug/:slug', validate(categoryValidation.getCategoryBySlug), categoryController.getCategoryBySlug);
 
-router.get('/:categoryId',auth('getCategory'), validate(categoryValidation.getCategory), categoryController.getCategory);
+router.get('/:categoryId', auth('getCategory'), validate(categoryValidation.getCategory), categoryController.getCategory);
 
-router.get('/:categoryId/children',auth('getCategories'), validate(categoryValidation.getChildCategories), categoryController.getChildCategories);
+router.get('/:categoryId/children', auth('getCategories'), validate(categoryValidation.getChildCategories), categoryController.getChildCategories);
 
 router.post('/', auth('manageCategories'), validate(categoryValidation.createCategory), categoryController.createCategory);
 
