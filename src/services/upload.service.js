@@ -64,9 +64,18 @@ const deleteImage = async (imageUrl) => {
     await deleteOldImage(imageUrl);
 };
 
+const uploadBlogImage = async (file) => {
+    if (!file) throw new ApiError(400, 'Không có file được upload');
+
+    return {
+        url: file.path
+    };
+};
+
 module.exports = {
     uploadUserAvatar,
     uploadInstructorAvatar,
     uploadCourseThumbnail,
     deleteImage,
+    uploadBlogImage
 };

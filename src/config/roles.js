@@ -49,6 +49,12 @@ const allRoles = {
         'managerFinancing',
         'getFinancing',
         'reviewEnrollmentRequest',
+        'assignCounselor',
+        'getEnrollmentRequests',
+        'logCall',
+        'logInterview',
+        'managePosts',
+        'manageUsers'
     ],
 };
 

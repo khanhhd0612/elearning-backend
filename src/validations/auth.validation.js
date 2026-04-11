@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { password } = require('./custom.validation');
+const { password, objectId } = require('./custom.validation');
 
 /**
  * Đăng ký user mới
@@ -168,7 +168,7 @@ const verifyEmail = {
  */
 const changePassword = {
     body: Joi.object().keys({
-        oldPassword: Joi.string()
+        password: Joi.string()
             .required()
             .messages({
                 'string.base': 'Mật khẩu cũ phải là chuỗi',
@@ -229,6 +229,16 @@ const updateProfile = {
     })
 };
 
+const queryUsers = {
+    query: Joi.object().keys({
+        isActive: Joi.boolean(),
+        role: Joi.string(),
+        sortBy: Joi.string().valid('createdAt:desc', 'createdAt:asc').default('createdAt:desc'),
+        limit: Joi.number().integer().min(1).max(100).default(10),
+        page: Joi.number().integer().min(1).default(1),
+    }),
+}
+
 /**
  * Tạo user (chỉ admin)
  */
@@ -266,16 +276,6 @@ const createUser = {
                 'any.required': 'Họ là bắt buộc'
             }),
 
-        userName: Joi.string()
-            .required()
-            .trim()
-            .alphanum()
-            .min(3)
-            .max(50)
-            .messages({
-                'any.required': 'Tên đăng nhập là bắt buộc'
-            }),
-
         phone: Joi.string()
             .required()
             .pattern(/^(0[3|5|7|8|9])[0-9]{8}$/)
@@ -283,19 +283,11 @@ const createUser = {
                 'any.required': 'Số điện thoại là bắt buộc'
             }),
 
-        position: Joi.string()
-            .required()
-            .trim()
-            .max(50)
-            .messages({
-                'any.required': 'Chức vụ là bắt buộc'
-            }),
-
         role: Joi.string()
-            .valid('employee', 'manager', 'admin')
-            .default('employee')
+            .valid('student', 'instructor', 'counselor', 'admin')
+            .default('student')
             .messages({
-                'any.only': 'Role phải là: employee, manager, hoặc admin'
+                'any.only': 'Role phải là: student instructor counselor admin'
             })
     })
 };
@@ -329,7 +321,7 @@ const updateUser = {
             .messages({
                 'string.max': 'Tên không quá 100 ký tự'
             }),
-            
+
         lastName: Joi.string()
             .trim()
             .max(100)
@@ -368,14 +360,14 @@ const updateUser = {
  */
 const deleteUser = {
     params: Joi.object().keys({
-        userId: Joi.string()
-            .regex(/^[0-9a-fA-F]{24}$/)
-            .required()
-            .messages({
-                'string.pattern.base': 'User ID không hợp lệ',
-                'any.required': 'User ID là bắt buộc'
-            })
+        userId: Joi.string().custom(objectId).required(),
     })
+};
+
+const getUser = {
+    params: Joi.object().keys({
+        userId: Joi.string().custom(objectId).required(),
+    }),
 };
 
 module.exports = {
@@ -390,5 +382,7 @@ module.exports = {
     updateProfile,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    queryUsers,
+    getUser
 };

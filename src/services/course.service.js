@@ -42,13 +42,11 @@ const queryCourses = async (filter = {}, options = {}) => {
         formatType,
         enrollmentType,
         level,
-        isActive = true,
+        isActive,
         search,
         minPrice,
         maxPrice
     } = filter;
-
-    const isActiveBool = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
 
     const {
         sortBy = 'createdAt:desc',
@@ -60,7 +58,12 @@ const queryCourses = async (filter = {}, options = {}) => {
     const [sortField, sortDir] = sortBy.split(':');
     const sort = { [sortField]: sortDir === 'asc' ? 1 : -1 };
 
-    const matchStage = { isActive: isActiveBool };
+    const matchStage = {};
+
+    if (isActive !== undefined) {
+        const isActiveBool = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
+        matchStage.isActive = isActiveBool;
+    }
 
     if (categoryId) {
         matchStage.categoryId = mongoose.Types.ObjectId.isValid(categoryId) ? new mongoose.Types.ObjectId(categoryId) : categoryId;
@@ -78,12 +81,13 @@ const queryCourses = async (filter = {}, options = {}) => {
         matchStage.$text = { $search: search };
     }
 
-    const pipeline = [
-        { $match: matchStage },
+    const pipeline = [{ $match: matchStage }];
 
-        ...(search ? [{ $addFields: { score: { $meta: 'textScore' } } }] : []),
-    ];
+    if (search) {
+        pipeline.push({ $addFields: { score: { $meta: 'textScore' } } });
+    }
 
+    // Xử lý Format Type
     if (formatType) {
         pipeline.push({
             $lookup: {
@@ -101,19 +105,16 @@ const queryCourses = async (filter = {}, options = {}) => {
                             },
                         },
                     },
-                    { $limit: 1 }, // chỉ cần biết có tồn tại hay không
+                    { $limit: 1 },
                 ],
                 as: '_matchedFormats',
             },
         });
-
-        // Loại bỏ course không có format khớp
         pipeline.push({ $match: { '_matchedFormats.0': { $exists: true } } });
-
-        // Xóa field tạm
         pipeline.push({ $unset: '_matchedFormats' });
     }
 
+    // Populate Category
     if (populate.includes('categoryId')) {
         pipeline.push({
             $lookup: {
@@ -121,16 +122,13 @@ const queryCourses = async (filter = {}, options = {}) => {
                 localField: 'categoryId',
                 foreignField: '_id',
                 as: 'categoryId',
-                pipeline: [
-                    { $project: { name: 1, slug: 1, color_hex: 1, icon: 1 } },
-                ],
+                pipeline: [{ $project: { name: 1, slug: 1, color_hex: 1, icon: 1 } }],
             },
         });
-        pipeline.push({
-            $unwind: { path: '$categoryId', preserveNullAndEmptyArrays: true },
-        });
+        pipeline.push({ $unwind: { path: '$categoryId', preserveNullAndEmptyArrays: true } });
     }
 
+    // Populate Formats (Danh sách đính kèm)
     if (populate.includes('formats')) {
         pipeline.push({
             $lookup: {
@@ -139,11 +137,11 @@ const queryCourses = async (filter = {}, options = {}) => {
                 foreignField: 'courseId',
                 as: 'formats',
                 pipeline: [
-                    { $match: { isActive: true } },
+                    ...(isActive === undefined ? [] : [{ $match: { isActive: true } }]),
                     {
                         $project: {
                             formatType: 1, priceOverride: 1, oncampusDetail: 1,
-                            onlineDetail: 1, remoteDetail: 1, hybridDetail: 1
+                            onlineDetail: 1, remoteDetail: 1, hybridDetail: 1, isActive: 1
                         }
                     },
                 ],
@@ -151,35 +149,25 @@ const queryCourses = async (filter = {}, options = {}) => {
         });
     }
 
-    const sortStage = search
-        ? { score: { $meta: 'textScore' }, ...sort }
-        : sort;
+    const sortStage = search ? { score: { $meta: 'textScore' }, ...sort } : sort;
     pipeline.push({ $sort: sortStage });
 
     const skip = (Number(page) - 1) * Number(limit);
-
     pipeline.push({
         $facet: {
-            results: [
-                { $skip: skip },
-                { $limit: Number(limit) },
-            ],
-            totalCount: [
-                { $count: 'count' },
-            ],
+            results: [{ $skip: skip }, { $limit: Number(limit) }],
+            totalCount: [{ $count: 'count' }],
         },
     });
 
     const [raw] = await Course.aggregate(pipeline);
-
     const totalResults = raw.totalCount[0]?.count ?? 0;
-    const totalPages = Math.ceil(totalResults / Number(limit));
 
     return {
         results: raw.results,
         page: Number(page),
         limit: Number(limit),
-        totalPages,
+        totalPages: Math.ceil(totalResults / Number(limit)),
         totalResults,
     };
 };

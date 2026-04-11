@@ -9,6 +9,8 @@ const campusRoute = require('./campus.route');
 const instructorRoute = require('./instructor.route');
 const uploadRoute = require('./upload.route');
 const enrollmentRequestRoute = require('./enrollmentRequest.route');
+const postRoute = require('./post.route');
+const userRoute = require('./user.route');
 const { router: financingRouter, nestedRouter: financingNestedRouter } = require('./financingOption.route');
 
 const router = express.Router();
@@ -26,6 +28,8 @@ const defaultRoutes = [
     { path: '/enrollments/:enrollmentId/financing', route: financingNestedRouter },
     { path: '/financing', route: financingRouter },
     { path: '/enrollment-requests', route: enrollmentRequestRoute },
+    { path: '/posts', route: postRoute },
+    { path: '/users', route: userRoute },
     { path: '/upload', route: uploadRoute },
 ];
 

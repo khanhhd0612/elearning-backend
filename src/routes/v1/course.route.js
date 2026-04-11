@@ -6,7 +6,7 @@ const courseController = require('../../controllers/course.controller');
 
 const router = express.Router();
 
-router.route('/').get(validate(courseValidation.getCourses), courseController.getCourses);
+router.route('/').get(auth('managerCourses'), validate(courseValidation.getCourses), courseController.getCourses);
 
 router.route('/public').get(validate(courseValidation.getCourses), courseController.getPublicCourses);
 

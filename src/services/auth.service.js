@@ -25,39 +25,46 @@ const login = async (email, password) => {
         throw new ApiError(403, 'Email hoặc mật khẩu không đúng');
     }
 
+    if (user.isLocked) {
+        const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / 60000);
+        throw new ApiError(
+            429,
+            `Tài khoản bị tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau ${remainingMinutes} phút`
+        );
+    }
+
     if (!user.isActive) {
         throw new ApiError(403, 'Tài khoản này đã bị vô hiệu hóa');
     }
 
     const isPasswordMatch = await user.isPasswordMatch(password);
+
     if (!isPasswordMatch) {
+        await user.incLoginAttempts();
         throw new ApiError(403, 'Email hoặc mật khẩu không đúng');
     }
 
-    await user.updateLastLogin();
+    await user.updateOne({
+        $set: { loginAttempts: 0, lastLogin: new Date() },
+        $unset: { lockUntil: 1 }
+    });
 
-    const accessToken = jwt.sign({
-        id: user._id.toString(),
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-    },
-        process.env.JWT_SECRET, { expiresIn: "15m" }
+    const accessToken = jwt.sign(
+        { id: user._id.toString(), email: user.email, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
     );
 
-    const refreshToken = jwt.sign({
-        id: user._id.toString(),
-        type: 'refresh'
-    },
+    const refreshToken = jwt.sign(
+        { id: user._id.toString(), type: 'refresh' },
         process.env.REFRESH_SECRET,
         { expiresIn: "7d" }
     );
 
     return {
         user: user.toAuthJSON(),
-        accessToken: accessToken,
-        refreshToken: refreshToken
+        accessToken,
+        refreshToken
     };
 };
 
@@ -78,8 +85,13 @@ const refreshAccessToken = async (refreshToken) => {
     }
 
     const user = await User.findById(decoded.id);
-    if (!user || !user.isActive) {
-        throw new ApiError(401, 'User không tồn tại hoặc bị khoá');
+
+    if (!user) {
+        throw new ApiError(401, 'User không tồn tại');
+    }
+
+    if (!user.isActive) {
+        throw new ApiError(403, 'Tài khoản đã bị khóa');
     }
 
     const accessToken = jwt.sign(

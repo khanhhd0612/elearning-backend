@@ -1,5 +1,6 @@
 const Category = require('../models/category.model');
 const ApiError = require('../utils/ApiError');
+const cacheService = require('./cache.service');
 
 const getCategoryById = async (categoryId) => {
     const category = await Category.findById(categoryId);
@@ -24,8 +25,15 @@ const getCategory = async (categoryId) => {
 };
 
 const getCategoryBySlug = async (slug) => {
+    const cacheKey = `categories:slug:${slug}`;
+
+    const cachedData = await cacheService.get(cacheKey);
+    if (cachedData) return cachedData;
+
     const category = await Category.findOne({ slug, isActive: true });
     if (!category) throw new ApiError(404, 'Không tìm thấy danh mục');
+
+    await cacheService.set(cacheKey, category, 3600);
     return category;
 };
 
@@ -86,6 +94,8 @@ const updateCategory = async (categoryId, updateData) => {
 
     Object.assign(category, updateData);
     await category.save();
+
+    await cacheService.delByPattern('categories:*');
     return category;
 };
 

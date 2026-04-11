@@ -115,6 +115,14 @@ const userSchema = mongoose.Schema(
             default: null,
             select: false
         },
+        loginAttempts: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        lockUntil: {
+            type: Date
+        }
     },
     {
         timestamps: true
@@ -141,6 +149,34 @@ userSchema.statics.isEmailTaken = async function (email, excludeUserId) {
         _id: { $ne: excludeUserId }
     });
     return !!user;
+};
+
+// Thêm một Virtual để kiểm tra trạng thái khóa
+userSchema.virtual('isLocked').get(function () {
+    return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
+/**
+ * Phương thức xử lý khi đăng nhập thất bại
+ */
+userSchema.methods.incLoginAttempts = async function () {
+    // Nếu khóa đã hết hạn, reset về 1 lần thử
+    if (this.lockUntil && this.lockUntil < Date.now()) {
+        return this.updateOne({
+            $set: { loginAttempts: 1 },
+            $unset: { lockUntil: 1 }
+        });
+    }
+
+    // Tăng số lần thử
+    const updates = { $inc: { loginAttempts: 1 } };
+
+    // Nếu đạt ngưỡng (VD: 5 lần), khóa trong 2 giờ
+    if (this.loginAttempts + 1 >= 5) {
+        updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 };
+    }
+
+    return this.updateOne(updates);
 };
 
 /**

@@ -11,19 +11,15 @@ const createCourse = catchAsync(async (req, res) => {
 });
 
 const getCourses = catchAsync(async (req, res) => {
-    try {
-        const filter = pick(req.query, ['categoryId', 'formatType', 'enrollmentType', 'level', 'search', 'isActive', 'minPrice', 'maxPrice']);
-        const options = pick(req.query, ['sortBy', 'limit', 'page', 'populate']);
+    const filter = pick(req.query, ['categoryId', 'formatType', 'enrollmentType', 'level', 'search', 'isActive', 'minPrice', 'maxPrice']);
+    const options = pick(req.query, ['sortBy', 'limit', 'page', 'populate']);
 
-        const result = await courseService.queryCourses(filter, options);
+    const result = await courseService.queryCourses(filter, options);
 
-        res.status(200).json({
-            status: 'success',
-            data: result,
-        })
-    } catch (error) {
-        console.log(error)
-    }
+    res.status(200).json({
+        status: 'success',
+        data: result,
+    })
 });
 
 const getPublicCourses = catchAsync(async (req, res) => {

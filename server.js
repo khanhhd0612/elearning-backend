@@ -2,37 +2,32 @@ const mongoose = require('mongoose');
 const app = require('./app');
 require('dotenv').config();
 const { initCronJobs } = require('./src/cronjob/cron');
+const { redisClient, connectRedis } = require('./src/config/redis');
 
 const PORT = process.env.PORT || 4000;
-
 let server;
 
-mongoose
-    .connect(process.env.MONGODB_URL)
-    .then(() => {
-        console.log('Connected to MongoDB');
-
-        initCronJobs();
-
-        server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-    })
-    .catch((err) => {
-        console.error('MongoDB connection error:', err);
-        process.exit(1);
-    });
-
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received. Starting graceful shutdown...`);
 
     if (server) {
-        server.close(() => {
+        server.close(async () => {
             console.log('HTTP server closed');
-            mongoose.connection.close(false, () => {
+            try {
+                await mongoose.connection.close();
                 console.log('MongoDB connection closed');
+
+                // Đóng Redis an toàn
+                if (redisClient.isOpen) {
+                    await redisClient.quit();
+                    console.log('Redis connection closed');
+                }
+
                 process.exit(0);
-            });
+            } catch (err) {
+                console.error('Error during shutdown:', err);
+                process.exit(1);
+            }
         });
 
         setTimeout(() => {
@@ -43,6 +38,27 @@ const gracefulShutdown = (signal) => {
         process.exit(0);
     }
 };
+
+const startServer = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URL);
+        console.log('Connected to MongoDB successfully');
+
+        await connectRedis();
+
+        initCronJobs();
+
+        server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+
+    } catch (err) {
+        console.error('Server startup error:', err);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));

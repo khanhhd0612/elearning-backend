@@ -20,10 +20,37 @@ const thumbnailStorage = new CloudinaryStorage({
     },
 });
 
-const FILE_SIZE_LIMIT = 5 * 1024 * 1024; // 5MB
+const postImageStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'posts_content',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ width: 1200, crop: 'limit' }],
+    },
+});
 
-const avatarUpload = multer({ storage: avatarStorage, limits: { fileSize: FILE_SIZE_LIMIT } });
-const thumbnailUpload = multer({ storage: thumbnailStorage, limits: { fileSize: FILE_SIZE_LIMIT } });
+
+const FILE_SIZE_LIMIT = 5 * 1024 * 1024;
+
+const avatarUpload = multer({
+    storage: avatarStorage,
+    limits: {
+        fileSize: FILE_SIZE_LIMIT
+    }
+});
+const thumbnailUpload = multer({
+    storage: thumbnailStorage,
+    limits: {
+        fileSize: FILE_SIZE_LIMIT
+    }
+});
+
+const postImageUpload = multer({
+    storage: postImageStorage,
+    limits: {
+        fileSize: FILE_SIZE_LIMIT
+    }
+});
 
 const parseJsonFields = (...fields) => (req, res, next) => {
     fields.forEach((field) => {
@@ -46,6 +73,8 @@ module.exports = {
         const instance = preset === 'thumbnail' ? thumbnailUpload : avatarUpload;
         return instance.single(fieldName);
     },
+
+    uploadPostImage: postImageUpload.single('image'),
 
     parseJsonFields,
 };
