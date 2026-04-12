@@ -37,7 +37,7 @@ const register = catchAsync(async (req, res) => {
 });
 
 const logout = catchAsync(async (req, res) => {
-    res.clearCookie('accessToken');
+    await authService.logout();
     res.clearCookie('refreshToken');
 
     return res.json({
@@ -76,7 +76,7 @@ const getMe = catchAsync(async (req, res) => {
     const user = await userService.getUserById(userId);
 
     res.status(200).json({
-        success: true,
+        status: 'success',
         message: 'Lấy profile thành công',
         data: {
             user: user.getPublicProfile()
@@ -89,10 +89,14 @@ const forgotPassword = catchAsync(async (req, res) => {
 
     const { user, token } = await authService.forgotPassword(email);
 
+    if (!user) {
+        return res.status(200).json({ status: 'success', message: 'Email đặt lại mật khẩu đã được gửi' });
+    }
+
     await emailService.sendResetPassword(user, token);
 
     res.status(200).json({
-        success: true,
+        status: 'success',
         message: 'Email đặt lại mật khẩu đã được gửi',
         ...(process.env.NODE_ENV === 'development' && { token }),
     });
@@ -105,7 +109,7 @@ const resetPassword = catchAsync(async (req, res) => {
     const user = await authService.resetPassword(resetToken, newPassword);
 
     res.status(200).json({
-        success: true,
+        status: 'success',
         message: 'Reset mật khẩu thành công',
         data: {
             user: user.toAuthJSON()

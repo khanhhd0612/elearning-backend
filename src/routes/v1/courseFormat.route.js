@@ -3,19 +3,20 @@ const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const courseFormatValidation = require('../../validations/courseFormat.validation');
 const courseFormatController = require('../../controllers/courseFormat.controller');
+const cache = require('../../middlewares/cache');
 
 const router = express.Router({ mergeParams: true });
 
-router.route('/').get(validate(courseFormatValidation.getCourseFormats), courseFormatController.getCourseFormats);
+router.get('/', cache(1800), validate(courseFormatValidation.getCourseFormats), courseFormatController.getCourseFormats);
 
-router.route('/:courseFormatId').get(validate(courseFormatValidation.getCourseFormat), courseFormatController.getCourseFormat);
+router.get('/:courseFormatId', cache(1800), validate(courseFormatValidation.getCourseFormat), courseFormatController.getCourseFormat);
 
-router.route('/').post(auth('managerCourseFormat'), validate(courseFormatValidation.createCourseFormat), courseFormatController.createCourseFormat);
+router.post('/', auth('managerCourseFormat'), validate(courseFormatValidation.createCourseFormat), courseFormatController.createCourseFormat);
 
-router.route('/:courseFormatId').patch(auth('managerCourseFormat'), validate(courseFormatValidation.updateCourseFormat), courseFormatController.updateCourseFormat);
+router.patch('/:courseFormatId', auth('managerCourseFormat'), validate(courseFormatValidation.updateCourseFormat), courseFormatController.updateCourseFormat);
 
-router.route('/:courseFormatId').delete(auth('deleteCourseFormat'), validate(courseFormatValidation.deleteCourseFormat), courseFormatController.deleteCourseFormat);
+router.delete('/:courseFormatId', auth('deleteCourseFormat'), validate(courseFormatValidation.deleteCourseFormat), courseFormatController.deleteCourseFormat);
 
-router.route('/:courseFormatId/toggle').patch(auth('managerCourseFormat'),validate(courseFormatValidation.toggleCourseFormat),courseFormatController.toggleCourseFormat);
+router.patch('/:courseFormatId/toggle', auth('managerCourseFormat'), validate(courseFormatValidation.toggleCourseFormat), courseFormatController.toggleCourseFormat);
 
 module.exports = router;

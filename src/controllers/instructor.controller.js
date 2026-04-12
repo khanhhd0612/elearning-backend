@@ -61,7 +61,10 @@ const toggleInstructor = catchAsync(async (req, res) => {
 
 const deleteInstructor = catchAsync(async (req, res) => {
     await instructorService.deleteInstructor(req.params.instructorId);
-    res.status(204).send();
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa Giảng viên thành công'}`,
+    });
 });
 
 module.exports = {

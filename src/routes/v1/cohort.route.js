@@ -3,26 +3,27 @@ const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const cohortValidation = require('../../validations/cohort.validation');
 const cohortController = require('../../controllers/cohort.controller');
+const cache = require('../../middlewares/cache');
 
 //nested dưới /course-formats/:courseFormatId/cohorts
 const nestedRouter = express.Router({ mergeParams: true });
 
-nestedRouter.route('/').get(validate(cohortValidation.getCohorts), cohortController.getCohorts);
+nestedRouter.get('/', cache(300), validate(cohortValidation.getCohorts), cohortController.getCohorts);
 
-nestedRouter.route('/').post(auth('managerCohorts'), validate(cohortValidation.createCohort), cohortController.createCohort);
+nestedRouter.post('/', auth('managerCohorts'), validate(cohortValidation.createCohort), cohortController.createCohort);
 
 const router = express.Router();
 
-router.route('/:cohortId').get(validate(cohortValidation.getCohort), cohortController.getCohort);
+router.get('/:cohortId', cache(300), validate(cohortValidation.getCohort), cohortController.getCohort);
 
-router.route('/:cohortId').patch(auth('managerCohorts'), validate(cohortValidation.updateCohort), cohortController.updateCohort);
+router.patch('/:cohortId', auth('managerCohorts'), validate(cohortValidation.updateCohort), cohortController.updateCohort);
 
-router.route('/:cohortId').delete(auth('deleteCohorts'), validate(cohortValidation.deleteCohort), cohortController.deleteCohort);
+router.delete('/:cohortId', auth('deleteCohorts'), validate(cohortValidation.deleteCohort), cohortController.deleteCohort);
 
-router.route('/:cohortId/status').patch(auth('managerCohorts'), validate(cohortValidation.updateStatus), cohortController.updateStatus);
+router.patch('/:cohortId/status', auth('managerCohorts'), validate(cohortValidation.updateStatus), cohortController.updateStatus);
 
-router.route('/:cohortId/instructors').post(auth('managerCohorts'), validate(cohortValidation.assignInstructor), cohortController.assignInstructor);
+router.post('/:cohortId/instructors', auth('managerCohorts'), validate(cohortValidation.assignInstructor), cohortController.assignInstructor);
 
-router.route('/:cohortId/instructors/:instructorId').delete(auth('managerCohorts'), validate(cohortValidation.removeInstructor), cohortController.removeInstructor);
+router.delete('/:cohortId/instructors/:instructorId', auth('managerCohorts'), validate(cohortValidation.removeInstructor), cohortController.removeInstructor);
 
 module.exports = { router, nestedRouter };

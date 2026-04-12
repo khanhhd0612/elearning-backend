@@ -1,4 +1,5 @@
 const User = require('../models/user.model');
+const { initWallet } = require('./wallet.service');
 const ApiError = require('../utils/ApiError');
 
 const getUserById = async (userId) => {
@@ -57,6 +58,8 @@ const createUser = async (userBody) => {
         phone: userBody.phone,
         role: userBody.role
     });
+
+    await initWallet(user._id);
 
     return user;
 }

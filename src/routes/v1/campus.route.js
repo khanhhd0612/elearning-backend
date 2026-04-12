@@ -3,19 +3,20 @@ const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const campusValidation = require('../../validations/campus.validation');
 const campusController = require('../../controllers/campus.controller');
+const cache = require('../../middlewares/cache');
 
 const router = express.Router();
 
-router.route('/').get(validate(campusValidation.getCampuses), campusController.getCampuses);
+router.get('/', cache(86400), validate(campusValidation.getCampuses), campusController.getCampuses);
 
-router.route('/').post(auth('managerCampus'), validate(campusValidation.createCampus), campusController.createCampus);
+router.post('/', auth('managerCampus'), validate(campusValidation.createCampus), campusController.createCampus);
 
-router.route('/:campusId').get(validate(campusValidation.getCampus), campusController.getCampus);
+router.get('/:campusId', cache(86400), validate(campusValidation.getCampus), campusController.getCampus);
 
-router.route('/:campusId').patch(auth('managerCampus'), validate(campusValidation.updateCampus), campusController.updateCampus);
+router.patch('/:campusId', auth('managerCampus'), validate(campusValidation.updateCampus), campusController.updateCampus);
 
-router.route('/:campusId').delete(auth('managerCampus'), validate(campusValidation.deleteCampus), campusController.deleteCampus);
+router.delete('/:campusId', auth('managerCampus'), validate(campusValidation.deleteCampus), campusController.deleteCampus);
 
-router.route('/:campusId/toggle').patch(auth('managerCampus'), validate(campusValidation.getCampus), campusController.toggleCampus);
+router.patch('/:campusId/toggle', auth('managerCampus'), validate(campusValidation.getCampus), campusController.toggleCampus);
 
 module.exports = router;

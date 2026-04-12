@@ -75,7 +75,10 @@ const toggleCourse = catchAsync(async (req, res) => {
 
 const deleteCourse = catchAsync(async (req, res) => {
     await courseService.deleteCourse(req.params.courseId);
-    res.status(204).send();
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa khóa học thành công'}`,
+    });
 });
 
 module.exports = {

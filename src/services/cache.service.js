@@ -43,23 +43,16 @@ const del = async (key) => {
  */
 const delByPattern = async (pattern) => {
     try {
-        // Sử dụng SCAN giúp hệ thống không bị "treo" nếu có hàng nghìn key
-        let cursor = 0;
-        do {
-            const reply = await redisClient.scan(cursor, {
-                MATCH: pattern,
-                COUNT: 100
-            });
-            cursor = reply.cursor;
-            const keys = reply.keys;
+        const keys = await redisClient.keys(pattern); // Lấy thử danh sách key
 
-            if (keys.length > 0) {
-                await redisClient.del(keys);
-            }
-        } while (cursor !== 0);
-
+        if (keys.length > 0) {
+            await redisClient.del(keys);
+            console.log(`Deleted keys: ${keys.join(', ')}`);
+        } else {
+            console.log(`No keys found for pattern: ${pattern}`);
+        }
     } catch (error) {
-        console.error(`Redis DelPattern Error (pattern: ${pattern}):`, error);
+        console.error(`Redis Del Error:`, error);
     }
 };
 

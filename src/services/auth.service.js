@@ -1,10 +1,13 @@
 const User = require('../models/user.model');
+const Token = require('../models/token.model');
 const ApiError = require('../utils/ApiError');
 const jwt = require("jsonwebtoken");
+const { initWallet } = require('./wallet.service');
+
 
 const register = async (userBody) => {
     if (await User.isEmailTaken(userBody.email)) {
-        throw new ApiError(404, 'Email đã được sử dụng');
+        throw new ApiError(409, 'Email đã được sử dụng');
     }
 
     const user = await User.create({
@@ -14,6 +17,8 @@ const register = async (userBody) => {
         password: userBody.password,
         phone: userBody.phone,
     });
+
+    await initWallet(user._id);
 
     return user;
 };
@@ -61,6 +66,13 @@ const login = async (email, password) => {
         { expiresIn: "7d" }
     );
 
+    await Token.create({
+        token: refreshToken,
+        user: user._id,
+        type: 'refresh',
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
     return {
         user: user.toAuthJSON(),
         accessToken,
@@ -77,22 +89,45 @@ const refreshAccessToken = async (refreshToken) => {
     try {
         decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
     } catch (err) {
-        throw new ApiError(401, 'Refresh token không hợp lệ hoặc đã hết hạn');
+        throw new ApiError(401, 'Token không hợp lệ hoặc hết hạn');
     }
 
-    if (decoded.type !== 'refresh') {
+    const tokenDoc = await Token.findOne({ token: refreshToken });
+
+    if (!tokenDoc) {
         throw new ApiError(401, 'Token không hợp lệ');
+    }
+
+    if (tokenDoc.blacklisted) {
+        await Token.updateMany(
+            { user: tokenDoc.user },
+            { blacklisted: true }
+        );
+
+        throw new ApiError(401, 'Phát hiện token bị đánh cắp (reuse)');
     }
 
     const user = await User.findById(decoded.id);
 
-    if (!user) {
-        throw new ApiError(401, 'User không tồn tại');
+    if (!user || !user.isActive) {
+        throw new ApiError(401, 'User không hợp lệ');
     }
 
-    if (!user.isActive) {
-        throw new ApiError(403, 'Tài khoản đã bị khóa');
-    }
+    tokenDoc.blacklisted = true;
+    await tokenDoc.save();
+
+    const newRefreshToken = jwt.sign(
+        { id: user._id.toString(), type: 'refresh' },
+        process.env.REFRESH_SECRET,
+        { expiresIn: '7d' }
+    );
+
+    await Token.create({
+        token: newRefreshToken,
+        user: user._id,
+        type: 'refresh',
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
 
     const accessToken = jwt.sign(
         {
@@ -102,15 +137,6 @@ const refreshAccessToken = async (refreshToken) => {
         },
         process.env.JWT_SECRET,
         { expiresIn: '15m' }
-    );
-
-    const newRefreshToken = jwt.sign(
-        {
-            id: user._id.toString(),
-            type: 'refresh'
-        },
-        process.env.REFRESH_SECRET,
-        { expiresIn: '7d' }
     );
 
     return {
@@ -152,10 +178,18 @@ const resetPassword = async (resetToken, newPassword) => {
     return user;
 };
 
+const logout = async (refreshToken) => {
+    await Token.updateOne(
+        { token: refreshToken },
+        { blacklisted: true }
+    );
+};
+
 module.exports = {
     refreshAccessToken,
     login,
     register,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    logout
 }

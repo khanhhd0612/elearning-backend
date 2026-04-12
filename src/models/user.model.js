@@ -281,7 +281,6 @@ userSchema.methods.getPublicProfile = function () {
         lastName: this.lastName,
         email: this.email,
         phone: this.phone,
-        position: this.position,
         role: this.role,
         profileImage: this.profileImage,
         isActive: this.isActive,
@@ -301,7 +300,6 @@ userSchema.methods.toAuthJSON = function () {
         lastName: this.lastName,
         email: this.email,
         phone: this.phone,
-        position: this.position,
         role: this.role,
         profileImage: this.profileImage,
         isVerified: this.isVerified

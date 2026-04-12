@@ -1,4 +1,3 @@
-const { options } = require("joi");
 const userService = require("../services/user.service");
 const catchAsync = require('../utils/catchAsync');
 const pick = require('../utils/pick');

@@ -18,7 +18,6 @@ const onlineDetailSchema = Joi.object({
 
 const remoteDetailSchema = Joi.object({
     timezone: Joi.string().default('Asia/Ho_Chi_Minh'),
-    zoomLink: Joi.string().uri().allow('').messages({ 'string.uri': 'Zoom link không hợp lệ' }),
     hoursPerWeek: Joi.number().integer().min(1).required(),
     schedule: Joi.string().trim().allow(''),
     maxSeats: Joi.number().integer().min(1).required(),

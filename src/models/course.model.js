@@ -2,15 +2,10 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const slugify = require('slugify');
 const { toJSON, paginate } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
+const { objectiveSchema, moduleSchema, outcomeSchema, skillRequirementSchema } = require('./schemas/courseContent.schema');
 
-const skillRequirementSchema = new Schema(
-    {
-        name: { type: String, required: true, trim: true },
-        description: { type: String, default: '' },
-        isRequired: { type: Boolean, default: true },
-    },
-    { _id: false }
-);
+
 
 const courseSchema = new Schema(
     {
@@ -76,7 +71,28 @@ const courseSchema = new Schema(
             default: [],
         },
 
-        thumbnailUrl : {
+        objectives: {
+            type: [objectiveSchema],
+            default: [],
+        },
+
+        curriculum: {
+            type: [moduleSchema],
+            default: [],
+        },
+
+        outcomes: {
+            type: [outcomeSchema],
+            default: [],
+        },
+
+        // Đối tượng phù hợp
+        targetAudience: {
+            type: [String],
+            default: [],
+        },
+
+        thumbnailUrl: {
             type: String,
             default: "",
         },
@@ -94,6 +110,8 @@ const courseSchema = new Schema(
 
 courseSchema.index({ categoryId: 1, isActive: 1 });
 courseSchema.index({ enrollmentType: 1, isActive: 1 });
+courseSchema.index({ title: 'text', description: 'text' });
+courseSchema.index({ slug: 1 });
 courseSchema.index({ basePrice: 1 });
 courseSchema.index({ createdAt: -1 });
 
@@ -135,6 +153,17 @@ courseSchema.pre('findOneAndUpdate', async function (next) {
 
 courseSchema.plugin(toJSON);
 courseSchema.plugin(paginate);
+
+const clearCourseCache = clearPatterns(
+    '__express__/v1/courses*'
+);
+
+courseSchema.post('save', clearCourseCache);
+courseSchema.post('insertMany', clearCourseCache);
+courseSchema.post('findOneAndUpdate', clearCourseCache);
+courseSchema.post('findOneAndDelete', clearCourseCache);
+courseSchema.post('deleteOne', clearCourseCache);
+courseSchema.post('updateMany', clearCourseCache);
 
 const Course = mongoose.model('Course', courseSchema);
 

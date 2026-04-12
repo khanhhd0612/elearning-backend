@@ -35,9 +35,9 @@ const getCampus = catchAsync(async (req, res) => {
 const updateCampus = catchAsync(async (req, res) => {
     const campus = await campusService.updateCampus(req.params.campusId, req.body);
 
-    res.status(200).json({ 
-        status: 'success', 
-        data: campus 
+    res.status(200).json({
+        status: 'success',
+        data: campus
     });
 });
 
@@ -53,7 +53,10 @@ const toggleCampus = catchAsync(async (req, res) => {
 
 const deleteCampus = catchAsync(async (req, res) => {
     await campusService.deleteCampus(req.params.campusId);
-    res.status(204).send();
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa trường thành công'}`,
+    });
 });
 
 module.exports = {

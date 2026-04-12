@@ -343,9 +343,9 @@ const updateUser = {
             }),
 
         role: Joi.string()
-            .valid('employee', 'manager', 'admin')
+            .valid('student', 'instructor', 'counselor', 'admin')
             .messages({
-                'any.only': 'Role phải là: employee, manager, hoặc admin'
+                'any.only': 'Role phải là: student, instructor, counselor, admin'
             }),
 
         isActive: Joi.boolean()

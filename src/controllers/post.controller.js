@@ -61,7 +61,10 @@ const updatePost = catchAsync(async (req, res) => {
 const deletePost = catchAsync(async (req, res) => {
     await postService.deletePost(req.params.postId);
 
-    res.status(204).send()
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa bài viết thành công'}`,
+    });;
 })
 
 const getPostById = catchAsync(async (req, res) => {

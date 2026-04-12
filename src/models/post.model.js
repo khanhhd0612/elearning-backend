@@ -22,11 +22,11 @@ const postSchema = new Schema(
             trim: true
         },
 
-        content: { 
-            type: Object, 
-            required: true 
+        content: {
+            type: Object,
+            required: true
         },
-        
+
         thumbnail: {
             type: String
         },
@@ -56,6 +56,8 @@ const postSchema = new Schema(
         timestamps: true
     }
 );
+
+postSchema.index({ title: 'text', content: 'text', });
 
 postSchema.pre('validate', async function (next) {
     if (this.isModified('title')) {

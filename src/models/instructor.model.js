@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { toJSON, paginate } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
 
 const instructorSchema = new Schema(
     {
@@ -63,6 +64,16 @@ instructorSchema.virtual('cohorts', {
 
 instructorSchema.plugin(toJSON);
 instructorSchema.plugin(paginate);
+
+const clearInstructorCache = clearPatterns(
+    '__express__/v1/instructors*',
+    '__express__/v1/cohorts*'
+);
+
+instructorSchema.post('save', clearInstructorCache);
+instructorSchema.post('findOneAndUpdate', clearInstructorCache);
+instructorSchema.post('findOneAndDelete', clearInstructorCache);
+instructorSchema.post('deleteOne', clearInstructorCache);
 
 const Instructor = mongoose.model('Instructor', instructorSchema);
 module.exports = Instructor;

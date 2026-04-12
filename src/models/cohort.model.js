@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { toJSON, paginate } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
 
 const cohortSchema = new Schema(
     {
@@ -38,12 +39,15 @@ const cohortSchema = new Schema(
             index: true,
         },
 
+        zoomLink: { type: String, trim: true, default: '' },
         // Số học viên tối đa — lấy từ format detail nhưng cho phép override
         maxSeats: {
             type: Number,
             min: [1, 'Số ghế phải >= 1'],
             default: null, // null = lấy từ format detail
         },
+
+        cancelReason: { type: String, trim: true, default: '' },
     },
     {
         timestamps: true,
@@ -77,6 +81,18 @@ cohortSchema.pre('save', function (next) {
 
 cohortSchema.plugin(toJSON);
 cohortSchema.plugin(paginate);
+
+const clearCohortCache = clearPatterns(
+    '__express__/v1/cohorts*',
+    '__express__/v1/course-formats*'
+);
+
+cohortSchema.post('save', clearCohortCache);
+cohortSchema.post('insertMany', clearCohortCache);
+cohortSchema.post('findOneAndUpdate', clearCohortCache);
+cohortSchema.post('findOneAndDelete', clearCohortCache);
+cohortSchema.post('deleteOne', clearCohortCache);
+cohortSchema.post('updateMany', clearCohortCache);
 
 const Cohort = mongoose.model('Cohort', cohortSchema);
 module.exports = Cohort;

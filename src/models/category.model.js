@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { toJSON, paginate } = require('./plugins');
 const slugify = require('slugify');
+const clearPatterns = require('../utils/clearPatterns');
 
 const categorySchema = mongoose.Schema(
     {
@@ -79,17 +80,17 @@ categorySchema.pre('save', async function (next) {
     next();
 });
 
-/**
- * @typedef Category
- * @property {string} _id
- * @property {string|null} parentId - ID danh mục cha, null nếu là danh mục gốc
- * @property {string} name - Tên danh mục
- * @property {string} slug - Slug tự động sinh từ name
- * @property {number} order - Thứ tự hiển thị
- * @property {boolean} isActive - Trạng thái
- * @property {Date} createdAt - Ngày tạo
- * @property {Date} updatedAt - Ngày cập nhật
- */
+const clearCategoryCache = clearPatterns(
+    '__express__/v1/categories*',
+    '__express__/v1/courses*'
+);
+
+categorySchema.post('save', clearCategoryCache);
+categorySchema.post('insertMany', clearCategoryCache);
+categorySchema.post('findOneAndUpdate', clearCategoryCache);
+categorySchema.post('findOneAndDelete', clearCategoryCache);
+categorySchema.post('deleteOne', clearCategoryCache);
+categorySchema.post('updateMany', clearCategoryCache);
 
 const Category = mongoose.model('Category', categorySchema);
 

@@ -15,7 +15,10 @@ const createCohort = {
                     'any.required': 'Ngày khai giảng là bắt buộc',
                     'date.greater': 'Ngày khai giảng phải ở tương lai',
                 }),
-
+            zoomLink: Joi.string().uri()
+                .messages({
+                    'string.uri': 'Zoom link không hợp lệ'
+                }),
             endDate: Joi.date().iso().greater(Joi.ref('startDate')).required()
                 .messages({
                     'any.required': 'Ngày kết thúc là bắt buộc',
@@ -35,6 +38,8 @@ const updateCohort = {
             name: Joi.string().trim().min(2).max(100),
             startDate: Joi.date().iso(),
             endDate: Joi.date().iso(),
+            zoomLink: Joi.string().uri().allow('').default('')
+                .messages({ 'string.uri': 'Zoom link không hợp lệ' }),
             maxSeats: Joi.number().integer().min(1).allow(null),
         })
         .min(1)
@@ -70,7 +75,6 @@ const updateStatus = {
             .required()
             .messages({ 'any.required': 'Status là bắt buộc' }),
 
-        // Lý do hủy — bắt buộc khi cancelled
         cancelReason: Joi.string().trim().max(500)
             .when('status', {
                 is: 'cancelled',

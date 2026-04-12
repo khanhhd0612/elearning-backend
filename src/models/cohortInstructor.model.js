@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { toJSON } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
 
 const cohortInstructorSchema = new Schema(
     {
@@ -46,6 +47,16 @@ cohortInstructorSchema.index(
 );
 
 cohortInstructorSchema.plugin(toJSON);
+
+const clearCohortInstructorCache = clearPatterns(
+    '__express__/v1/cohorts*',
+    '__express__/v1/instructors*'
+);
+
+cohortInstructorSchema.post('save', clearCohortInstructorCache);
+cohortInstructorSchema.post('findOneAndUpdate', clearCohortInstructorCache);
+cohortInstructorSchema.post('findOneAndDelete', clearCohortInstructorCache);
+cohortInstructorSchema.post('deleteOne', clearCohortInstructorCache);
 
 const CohortInstructor = mongoose.model('CohortInstructor', cohortInstructorSchema);
 module.exports = CohortInstructor;

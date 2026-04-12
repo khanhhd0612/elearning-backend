@@ -25,15 +25,9 @@ const getCategory = async (categoryId) => {
 };
 
 const getCategoryBySlug = async (slug) => {
-    const cacheKey = `categories:slug:${slug}`;
-
-    const cachedData = await cacheService.get(cacheKey);
-    if (cachedData) return cachedData;
-
     const category = await Category.findOne({ slug, isActive: true });
     if (!category) throw new ApiError(404, 'Không tìm thấy danh mục');
 
-    await cacheService.set(cacheKey, category, 3600);
     return category;
 };
 
@@ -69,16 +63,11 @@ const getCategoryTree = async () => {
     return roots;
 };
 
-const checkSlugExists = async (slug, excludeId = null) => {
-    const query = { slug };
-    if (excludeId) query._id = { $ne: excludeId };
-    return Category.exists(query);
-};
-
 const createCategory = async (data) => {
     if (data.parentId) {
         await getCategoryById(data.parentId);
     }
+
     return Category.create(data);
 };
 
@@ -95,7 +84,6 @@ const updateCategory = async (categoryId, updateData) => {
     Object.assign(category, updateData);
     await category.save();
 
-    await cacheService.delByPattern('categories:*');
     return category;
 };
 
@@ -109,6 +97,7 @@ const deleteCategory = async (categoryId) => {
 
     category.isActive = false;
     await category.save();
+
     return category;
 };
 
@@ -121,6 +110,7 @@ const reorderCategories = async (orders) => {
     }));
 
     await Category.bulkWrite(ops);
+    await cacheService.delByPattern('__express__/v1/categories:*');
 };
 
 module.exports = {

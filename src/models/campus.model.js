@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const slugify = require('slugify');
 const { toJSON, paginate } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
 
 const campusSchema = new Schema(
     {
@@ -92,6 +93,16 @@ campusSchema.pre('save', async function (next) {
 
 campusSchema.plugin(toJSON);
 campusSchema.plugin(paginate);
+
+const clearCampusCache = clearPatterns(
+    '__express__/v1/campuses*',
+    '__express__/v1/courses*'
+);
+
+campusSchema.post('save', clearCampusCache);
+campusSchema.post('findOneAndUpdate', clearCampusCache);
+campusSchema.post('findOneAndDelete', clearCampusCache);
+campusSchema.post('deleteOne', clearCampusCache);
 
 const Campus = mongoose.model('Campus', campusSchema);
 module.exports = Campus;

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { toJSON, paginate } = require('./plugins');
+const clearPatterns = require('../utils/clearPatterns');
 
 const oncampusDetailSchema = new Schema(
     {
@@ -30,7 +31,6 @@ const onlineDetailSchema = new Schema(
 const remoteDetailSchema = new Schema(
     {
         timezone: { type: String, default: 'Asia/Ho_Chi_Minh' },
-        zoomLink: { type: String, trim: true },
         hoursPerWeek: { type: Number, required: true, min: 1 },
         schedule: { type: String, trim: true },
         maxSeats: { type: Number, required: true, min: 1 },
@@ -139,6 +139,15 @@ courseFormatSchema.pre('save', function (next) {
 
 courseFormatSchema.plugin(toJSON);
 courseFormatSchema.plugin(paginate);
+
+const clearCourseFormatCache = clearPatterns(
+    '__express__/v1/courses*'
+);
+
+courseFormatSchema.post('save', clearCourseFormatCache);
+courseFormatSchema.post('findOneAndUpdate', clearCourseFormatCache);
+courseFormatSchema.post('findOneAndDelete', clearCourseFormatCache);
+courseFormatSchema.post('deleteOne', clearCourseFormatCache);
 
 const CourseFormat = mongoose.model('CourseFormat', courseFormatSchema);
 

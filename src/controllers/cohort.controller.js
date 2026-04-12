@@ -68,7 +68,7 @@ const assignInstructor = catchAsync(async (req, res) => {
         req.body.instructorId,
         req.body.role
     );
-    
+
     res.status(201).json({
         status: 'success',
         data: assignment
@@ -85,7 +85,10 @@ const removeInstructor = catchAsync(async (req, res) => {
 
 const deleteCohort = catchAsync(async (req, res) => {
     await cohortService.deleteCohort(req.params.cohortId);
-    res.status(204).send();
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa nhóm thành công'}`,
+    });
 });
 
 module.exports = {

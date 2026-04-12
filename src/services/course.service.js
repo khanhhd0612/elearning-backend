@@ -27,7 +27,7 @@ const getCourseById = async (courseId, populate = '') => {
 
 const getCourseBySlug = async (slug) => {
     const course = await Course.findOne({ slug, isActive: true })
-        .populate('categoryId', 'name slug colorHex icon')
+        .populate('categoryId', 'name slug')
         .populate('formats');
 
     if (!course) {
@@ -66,8 +66,11 @@ const queryCourses = async (filter = {}, options = {}) => {
     }
 
     if (categoryId) {
-        matchStage.categoryId = mongoose.Types.ObjectId.isValid(categoryId) ? new mongoose.Types.ObjectId(categoryId) : categoryId;
+        matchStage.categoryId = mongoose.Types.ObjectId.isValid(categoryId)
+            ? new mongoose.Types.ObjectId(categoryId)
+            : categoryId;
     }
+
     if (enrollmentType) matchStage.enrollmentType = enrollmentType;
     if (level) matchStage.level = level;
 
@@ -87,7 +90,6 @@ const queryCourses = async (filter = {}, options = {}) => {
         pipeline.push({ $addFields: { score: { $meta: 'textScore' } } });
     }
 
-    // Xử lý Format Type
     if (formatType) {
         pipeline.push({
             $lookup: {
@@ -114,7 +116,6 @@ const queryCourses = async (filter = {}, options = {}) => {
         pipeline.push({ $unset: '_matchedFormats' });
     }
 
-    // Populate Category
     if (populate.includes('categoryId')) {
         pipeline.push({
             $lookup: {
@@ -122,13 +123,12 @@ const queryCourses = async (filter = {}, options = {}) => {
                 localField: 'categoryId',
                 foreignField: '_id',
                 as: 'categoryId',
-                pipeline: [{ $project: { name: 1, slug: 1, color_hex: 1, icon: 1 } }],
+                pipeline: [{ $project: { name: 1, slug: 1 } }],
             },
         });
         pipeline.push({ $unwind: { path: '$categoryId', preserveNullAndEmptyArrays: true } });
     }
 
-    // Populate Formats (Danh sách đính kèm)
     if (populate.includes('formats')) {
         pipeline.push({
             $lookup: {
@@ -148,6 +148,18 @@ const queryCourses = async (filter = {}, options = {}) => {
             },
         });
     }
+
+    pipeline.push({
+        $project: {
+            curriculum: 0,
+            objectives: 0,
+            outcomes: 0,
+            targetAudience: 0,
+            requiredSkills: 0,
+            __v: 0,
+            ...(search ? {} : { score: 0 })
+        }
+    });
 
     const sortStage = search ? { score: { $meta: 'textScore' }, ...sort } : sort;
     pipeline.push({ $sort: sortStage });
@@ -213,7 +225,6 @@ const getPublicCourses = async (filter = {}, options = {}) => {
 
     const pipeline = [
         { $match: matchStage },
-
         ...(search ? [{ $addFields: { score: { $meta: 'textScore' } } }] : []),
     ];
 
@@ -234,16 +245,12 @@ const getPublicCourses = async (filter = {}, options = {}) => {
                             },
                         },
                     },
-                    { $limit: 1 }, // chỉ cần biết có tồn tại hay không
+                    { $limit: 1 },
                 ],
                 as: '_matchedFormats',
             },
         });
-
-        // Loại bỏ course không có format khớp
         pipeline.push({ $match: { '_matchedFormats.0': { $exists: true } } });
-
-        // Xóa field tạm
         pipeline.push({ $unset: '_matchedFormats' });
     }
 
@@ -284,8 +291,19 @@ const getPublicCourses = async (filter = {}, options = {}) => {
         });
     }
 
-    const sortStage = search ? { score: { $meta: 'textScore' }, ...sort } : sort;
+    pipeline.push({
+        $project: {
+            curriculum: 0,
+            objectives: 0,
+            outcomes: 0,
+            targetAudience: 0,
+            requiredSkills: 0,
+            description: 0,
+            __v: 0
+        }
+    });
 
+    const sortStage = search ? { score: { $meta: 'textScore' }, ...sort } : sort;
     pipeline.push({ $sort: sortStage });
 
     const skip = (Number(page) - 1) * Number(limit);

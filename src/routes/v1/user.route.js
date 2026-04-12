@@ -14,6 +14,6 @@ router.get('/:userId', auth("manageUsers"), validate(authValidation.getUser), us
 
 router.patch('/change-password', auth(), validate(authValidation.changePassword), userController.changePassword);
 
-router.patch('/toogle/:userId', auth('manageUsers'), validate(authValidation.getUser), userController.toggleUser);
+router.patch('/toggle/:userId', auth('manageUsers'), validate(authValidation.getUser), userController.toggleUser);
 
 module.exports = router;

@@ -1,7 +1,6 @@
 const catchAsync = require('../utils/catchAsync');
 const courseFormatService = require('../services/courseFormat.service');
 
-// ── POST /courses/:courseId/formats ────────────────────────────────────────
 const createCourseFormat = catchAsync(async (req, res) => {
     const format = await courseFormatService.createCourseFormat(
         req.params.courseId,
@@ -13,7 +12,6 @@ const createCourseFormat = catchAsync(async (req, res) => {
     });
 });
 
-// ── GET /courses/:courseId/formats ─────────────────────────────────────────
 const getCourseFormats = catchAsync(async (req, res) => {
     const filter = {};
     if (req.query.formatType) filter.formatType = req.query.formatType;
@@ -29,7 +27,6 @@ const getCourseFormats = catchAsync(async (req, res) => {
     });
 });
 
-// ── GET /courses/:courseId/formats/:courseFormatId ─────────────────────────
 const getCourseFormat = catchAsync(async (req, res) => {
     const format = await courseFormatService.getCourseFormatById(
         req.params.courseFormatId,
@@ -41,7 +38,6 @@ const getCourseFormat = catchAsync(async (req, res) => {
     });
 });
 
-// ── PATCH /courses/:courseId/formats/:courseFormatId ───────────────────────
 const updateCourseFormat = catchAsync(async (req, res) => {
     const format = await courseFormatService.updateCourseFormat(
         req.params.courseFormatId,
@@ -54,7 +50,6 @@ const updateCourseFormat = catchAsync(async (req, res) => {
     });
 });
 
-// ── PATCH /courses/:courseId/formats/:courseFormatId/toggle ────────────────
 const toggleCourseFormat = catchAsync(async (req, res) => {
     const format = await courseFormatService.toggleCourseFormat(
         req.params.courseFormatId,
@@ -67,13 +62,15 @@ const toggleCourseFormat = catchAsync(async (req, res) => {
     });
 });
 
-// ── DELETE /courses/:courseId/formats/:courseFormatId ──────────────────────
 const deleteCourseFormat = catchAsync(async (req, res) => {
     await courseFormatService.deleteCourseFormat(
         req.params.courseFormatId,
         req.params.courseId
     );
-    res.status(204).send();
+    res.status(204).json({
+        status: 'success',
+        message: `Xóa format thành công'}`,
+    });
 });
 
 module.exports = {

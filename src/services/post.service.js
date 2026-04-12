@@ -7,21 +7,20 @@ const createPost = async (body) => {
 }
 
 const queryPosts = async (filter = {}, options = {}) => {
-    const searchFilter = filter.search ? {
-        ...filter,
-        title: {
-            $regex: filter.search,
-            $options: 'i'
-        }
-    } : filter;
+    const searchFilter = { ...filter };
+
+    if (filter.search) {
+        searchFilter.$text = { $search: filter.search };
+    }
+
     delete searchFilter.search;
 
     return Post.paginate(searchFilter, {
-        sortBy: options.sortBy || 'title:asc',
+        sortBy: options.sortBy || 'createdAt:desc',
         limit: options.limit || 10,
         page: options.page || 1,
     });
-}
+};
 
 const getPostById = async (postId) => {
     const post = await Post.findById(postId)
