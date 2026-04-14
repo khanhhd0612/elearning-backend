@@ -14,7 +14,7 @@ const enrollmentSchema = new Schema(
         cohortId: {
             type: Schema.Types.ObjectId,
             ref: 'Cohort',
-            required: [true, 'Cohort là bắt buộc'],
+            default: null,      // null với self_paced
             index: true,
         },
 
@@ -23,6 +23,13 @@ const enrollmentSchema = new Schema(
             ref: 'Course',
             required: [true, 'Khóa học là bắt buộc'],
             index: true,
+        },
+
+        // Phân biệt 2 loại để query và xử lý khác nhau
+        deliveryMode: {
+            type: String,
+            enum: ['self_paced', 'instructor_led'],
+            required: true,
         },
 
         status: {
@@ -35,48 +42,44 @@ const enrollmentSchema = new Schema(
             index: true,
         },
 
-        amountPaid: {
-            type: Number,
-            min: [0, 'Số tiền không hợp lệ'],
-            default: 0,
-        },
-
+        amountPaid: { type: Number, min: 0, default: 0 },
         paymentStatus: {
             type: String,
-            enum: {
-                values: ['pending', 'partial', 'paid', 'refunded'],
-                message: 'paymentStatus phải là pending | partial | paid | refunded',
-            },
+            enum: ['pending', 'partial', 'paid', 'refunded'],
             default: 'pending',
             index: true,
         },
 
-        // Thời điểm hoàn thành hoặc bỏ học
-        completedAt: {
-            type: Date,
-            default: null,
-        },
-
-        droppedAt: {
-            type: Date,
-            default: null,
-        },
-
-        // Lý do bỏ học
-        dropReason: {
-            type: String,
-            trim: true,
-            default: '',
-        },
+        completedAt: { type: Date, default: null },
+        droppedAt: { type: Date, default: null },
+        dropReason: { type: String, trim: true, default: '' },
+        startedAt: { type: Date, default: null },
+        lastAccessedAt: { type: Date, default: null },
+        expiresAt: { type: Date, default: null },
+        progressPercent: { type: Number, default: 0, min: 0, max: 100 },
     },
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+// self_paced: user chỉ enroll 1 lần cho mỗi course (cohortId = null)
+enrollmentSchema.index(
+    { userId: 1, courseId: 1 },
     {
-        timestamps: true,
+        unique: true,
+        partialFilterExpression: { deliveryMode: 'self_paced' },
+        name: 'unique_self_paced_enrollment',
     }
 );
 
+// instructor_led: user chỉ enroll 1 lần cho mỗi cohort
 enrollmentSchema.index(
     { userId: 1, cohortId: 1 },
-    { unique: true }
+    {
+        unique: true,
+        partialFilterExpression: { deliveryMode: 'instructor_led' },
+        sparse: true,   // bỏ qua document có cohortId = null
+        name: 'unique_instructor_led_enrollment',
+    }
 );
 
 enrollmentSchema.index({ cohortId: 1, status: 1 });

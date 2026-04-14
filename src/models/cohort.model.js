@@ -54,8 +54,13 @@ const cohortSchema = new Schema(
     }
 );
 
-cohortSchema.index({ courseFormatId: 1, status: 1 });
-cohortSchema.index({ startDate: 1 });
+cohortSchema.index(
+    { courseFormatId: 1, name: 1 },
+    {
+        unique: true,
+        name: 'unique_cohort_name_per_format',
+    }
+);
 cohortSchema.index({ status: 1, startDate: 1 });
 
 cohortSchema.virtual('enrollmentCount', {

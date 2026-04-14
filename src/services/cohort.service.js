@@ -3,7 +3,6 @@ const CohortInstructor = require('../models/cohortInstructor.model');
 const ApiError = require('../utils/ApiError');
 const Enrollment = require('../models/enrollment.model');
 
-
 const getById = async (cohortId, populate = '') => {
     let query = Cohort.findById(cohortId);
     if (populate.includes('instructors')) query = query.populate('instructors');

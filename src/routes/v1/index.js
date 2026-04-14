@@ -13,6 +13,7 @@ const postRoute = require('./post.route');
 const userRoute = require('./user.route');
 const { router: financingRouter, nestedRouter: financingNestedRouter } = require('./financingOption.route');
 const walletRoute = require('./wallet.route');
+const lessonRoute = require('./courseLesson.route');
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ const defaultRoutes = [
     { path: '/users', route: userRoute },
     { path: '/upload', route: uploadRoute },
     { path: '/wallet', route: walletRoute },
+    { path: '/courses/:courseId/lessons', route: lessonRoute },
 ];
 
 defaultRoutes.forEach((route) => {

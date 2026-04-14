@@ -42,7 +42,6 @@ const vnpayReturn = catchAsync(async (req, res) => {
     res.redirect(`${process.env.CLIENT_URL}/wallet/topup/result?success=${success}&txn=${vnp_TxnRef}`);
 });
 
-// POST /wallet/topup/sepay/webhook — SePay callback
 const sepayWebhook = catchAsync(async (req, res) => {
     const result = await walletService.handleSePay(req.body, req.headers);
     res.status(200).json(result);

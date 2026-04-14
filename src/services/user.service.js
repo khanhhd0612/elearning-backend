@@ -40,7 +40,9 @@ const queryUsers = async (filter, options) => {
 
 const toggleUser = async (userId) => {
     const user = await getUserById(userId);
+
     user.isActive = !user.isActive;
+
     await user.save();
     return user;
 }
@@ -64,10 +66,28 @@ const createUser = async (userBody) => {
     return user;
 }
 
+const updateRole = async (userId, role) => {
+    const user = await getUserById(userId);
+
+    if (user.role === 'admin') {
+        throw new ApiError(403, 'Không thể thay đổi role của admin');
+    }
+
+    if (role === 'admin') {
+        throw new ApiError(403, 'Không được phép gán role admin');
+    }
+
+    user.role = role;
+    await user.save();
+
+    return user;
+};
+
 module.exports = {
     getUserById,
     changePassword,
     toggleUser,
     queryUsers,
-    createUser
+    createUser,
+    updateRole
 }

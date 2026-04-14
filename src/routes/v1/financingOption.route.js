@@ -12,7 +12,7 @@ nestedRouter.route('/').post(auth('managerFinancing'), validate(financingValidat
 
 const router = express.Router();
 
-router.route('/:financingId').get(auth('getFinancing', 'getMyFinancing'), validate(financingValidation.getFinancingOption), financingController.getFinancingOption);
+router.route('/:financingId').get(auth('getFinancing'), validate(financingValidation.getFinancingOption), financingController.getFinancingOption);
 
 router.route('/:financingId/payment').post(auth('managerFinancing'), validate(financingValidation.recordPayment), financingController.recordPayment);
 

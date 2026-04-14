@@ -54,10 +54,23 @@ const createUser = catchAsync(async (req, res) => {
     });
 });
 
+const updateRole = catchAsync(async (req, res) => {
+    const { userId, role } = req.body;
+
+    const user = await userService.updateRole(userId, role);
+
+    res.status(201).json({
+        status: 'success',
+        message: 'Cập nhật role thành công',
+        data: user
+    });
+})
+
 module.exports = {
     getUser,
     queryUsers,
     changePassword,
     toggleUser,
-    createUser
+    createUser,
+    updateRole
 }

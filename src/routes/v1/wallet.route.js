@@ -11,7 +11,6 @@ router.get('/transactions', auth(), validate(walletValidation.getTransactions), 
 router.post('/topup/initiate', auth(), validate(walletValidation.initiateTopup), walletController.initiateTopup);
 router.post('/purchase', auth(), validate(walletValidation.purchaseWithWallet), walletController.purchaseWithWallet);
 
-// Webhook — không cần auth JWT, xác thực bằng API key trong service
 router.get('/topup/vnpay/ipn', walletController.vnpayIPN);
 router.get('/topup/vnpay/return', walletController.vnpayReturn);
 router.post('/topup/sepay/webhook', walletController.sepayWebhook);

@@ -3,6 +3,8 @@ const { Wallet, WalletTransaction } = require('../models/wallet.model');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger');
 const qs = require('qs');
+const FinancingOption = require('../models/financingOption.model');
+
 
 const initWallet = async (userId) => {
     const exists = await Wallet.findOne({ userId });
@@ -195,7 +197,10 @@ const handleSePay = async (body, headers) => {
 
     // Idempotency
     if (transaction.status === 'completed') {
-        return { success: true, message: 'Already processed' };
+        return {
+            success: true,
+            message: 'Already processed'
+        };
     }
 
     // Verify amount
@@ -238,10 +243,9 @@ const creditWallet = async (transaction, gatewayRef, metadata) => {
 
 // MUA KHÓA HỌC BẰNG VÍ
 const purchaseWithWallet = async (userId, enrollmentId) => {
-    const FinancingOption = require('../models/financingOption.model');
-
     // Lấy financing để biết số tiền cần trả
-    const financing = await FinancingOption.findOne({ enrollmentId });
+    console.log(enrollmentId)
+    const financing = await FinancingOption.findById(enrollmentId);
     if (!financing) {
         throw new ApiError(404, 'Không tìm thấy thông tin học phí');
     }
@@ -273,7 +277,7 @@ const purchaseWithWallet = async (userId, enrollmentId) => {
             throw new ApiError(400, 'Ví đã bị khóa');
         }
         throw new ApiError(
-            404,
+            400,
             `Số dư không đủ. Cần ${amount.toLocaleString('vi-VN')} VND, hiện có ${currentWallet.balance.toLocaleString('vi-VN')} VND`
         );
     }

@@ -64,7 +64,12 @@ const createCourse = {
         level: Joi.string().valid(...levels).allow(null).default(null),
         requiredSkills: Joi.array().items(skillRequirementRule).default([]),
         isActive: Joi.boolean().default(true),
-
+        deliveryMode: Joi.string()
+            .valid('self_paced', 'instructor_led')
+            .default('instructor_led')
+            .messages({
+                'any.only': 'Role phải là: student, instructor, counselor, admin'
+            }),
         ...contentFields,
     }),
 };

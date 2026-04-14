@@ -13,7 +13,7 @@ const callLogSchema = new Schema(
             enum: ['reached', 'no_answer', 'rescheduled'],
             required: true,
         },
-        // Nếu rescheduled → lưu thời gian gọi lại
+        // Nếu rescheduled lưu thời gian gọi lại
         rescheduleAt: { type: Date, default: null },
     },
     { _id: true }

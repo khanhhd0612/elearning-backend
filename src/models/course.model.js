@@ -97,6 +97,13 @@ const courseSchema = new Schema(
             default: "",
         },
 
+        deliveryMode: {
+            type: String,
+            enum: ['self_paced', 'instructor_led'],
+            required: true,
+            default: 'instructor_led',
+        },
+
         isActive: {
             type: Boolean,
             default: true,

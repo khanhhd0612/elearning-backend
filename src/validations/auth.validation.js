@@ -370,6 +370,17 @@ const getUser = {
     }),
 };
 
+const updateRole = {
+    body: Joi.object().keys({
+        userId: Joi.string().custom(objectId).required(),
+        role: Joi.string().required()
+            .valid('student', 'instructor', 'counselor', 'admin')
+            .messages({
+                'any.only': 'Role phải là: student, instructor, counselor, admin'
+            }),
+    })
+}
+
 module.exports = {
     register,
     login,
@@ -384,5 +395,6 @@ module.exports = {
     updateUser,
     deleteUser,
     queryUsers,
-    getUser
+    getUser,
+    updateRole
 };

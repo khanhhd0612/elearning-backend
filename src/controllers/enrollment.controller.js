@@ -1,23 +1,17 @@
 const catchAsync = require('../utils/catchAsync');
 const enrollmentService = require('../services/enrollment.service');
 
-//Public
+// Public — tự động detect self_paced vs instructor_led
 const enroll = catchAsync(async (req, res) => {
-    const enrollment = await enrollmentService.enroll(
-        req.user._id,
-        req.body.cohortId
-    );
-    res.status(201).json({
-        status: 'success',
-        data: enrollment,
-    });
+    const enrollment = await enrollmentService.enroll(req.user._id, req.body);
+    res.status(201).json({ status: 'success', data: enrollment });
 });
 
 // Approval — gửi request
 const requestEnrollment = catchAsync(async (req, res) => {
     const request = await enrollmentService.requestEnrollment(
         req.user._id,
-        req.body.cohortId,
+        req.body.courseFormatId,
         req.body.motivation
     );
     res.status(201).json({
@@ -42,7 +36,7 @@ const reviewEnrollmentRequest = catchAsync(async (req, res) => {
     });
 });
 
-//Approval — lấy danh sách request
+// Approval — lấy danh sách request
 const getPendingRequests = catchAsync(async (req, res) => {
     const filter = {};
     if (req.query.cohortId) filter.cohortId = req.query.cohortId;
@@ -50,13 +44,10 @@ const getPendingRequests = catchAsync(async (req, res) => {
     if (req.query.status) filter.status = req.query.status;
 
     const result = await enrollmentService.getPendingRequests(filter, req.query);
-    res.status(200).json({
-        status: 'success',
-        data: result,
-    });
+    res.status(200).json({ status: 'success', data: result });
 });
 
-//Invite only — admin/instructor gửi lời mời
+// Invite only — admin gửi lời mời
 const sendInvite = catchAsync(async (req, res) => {
     const invite = await enrollmentService.sendInvite(
         req.body.courseId,
@@ -70,12 +61,12 @@ const sendInvite = catchAsync(async (req, res) => {
     });
 });
 
-//Invite only — user xác nhận lời mời
+// Invite only — user xác nhận
 const acceptInvite = catchAsync(async (req, res) => {
     const enrollment = await enrollmentService.acceptInvite(
         req.body.token,
         req.user._id,
-        req.body.cohortId
+        req.body.cohortId || null  // null nếu self_paced
     );
     res.status(201).json({
         status: 'success',
